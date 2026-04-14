@@ -23,6 +23,7 @@ import {
   handleCommentEvent,
   handleMessageEvent,
   handleReactionEvent,
+  handleTaskCommentEvent,
 } from './event-handlers';
 
 const mlog = larkLogger('channel/monitor');
@@ -107,6 +108,7 @@ async function monitorSingleAccount(params: {
       'im.chat.member.bot.deleted_v1': (data) => handleBotMembershipEvent(ctx, data, 'removed'),
       // Drive comment event — fires when a user adds a comment or reply on a document.
       'drive.notice.comment_add_v1': (data) => handleCommentEvent(ctx, data),
+      'task.task.comment.updated_v1': (data) => handleTaskCommentEvent(ctx, data),
       // 飞书 SDK EventDispatcher.register 不支持带返回值的处理器，此处 as any 是 SDK 类型限制的变通
       'card.action.trigger': ((data: unknown) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

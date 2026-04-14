@@ -9,16 +9,25 @@
  * dependencies needed to process the event.
  */
 
-import type { FeishuBotAddedEvent, FeishuMessageEvent, FeishuReactionCreatedEvent } from '../messaging/types';
+import type {
+  FeishuBotAddedEvent,
+  FeishuMessageEvent,
+  FeishuReactionCreatedEvent,
+  FeishuTaskCommentUpdatedEvent,
+} from '../messaging/types';
 import { handleFeishuMessage } from '../messaging/inbound/handler';
 import { handleFeishuReaction, resolveReactionContext } from '../messaging/inbound/reaction-handler';
 import { handleFeishuCommentEvent } from '../messaging/inbound/comment-handler';
 import { parseFeishuDriveCommentNoticeEventPayload } from '../messaging/inbound/comment-context';
+import {
+  parseFeishuTaskCommentUpdatedEventPayload,
+  resolveFeishuTaskCommentChangeType,
+} from '../messaging/inbound/task-comment-event';
 import { isMessageExpired } from '../messaging/inbound/dedup';
 import { withTicket } from '../core/lark-ticket';
 import { larkLogger } from '../core/lark-logger';
 import { handleCardAction } from '../tools/auto-auth';
-import { handleAskUserAction } from '../tools/ask-user-question';
+import { handleAskUserAction, handleAskUserTaskCommentEvent } from '../tools/ask-user-question';
 import { buildQueueKey, enqueueFeishuChatTask, getActiveDispatcher, hasActiveTask } from './chat-queue';
 import { extractRawTextFromEvent, isLikelyAbortText } from './abort-detect';
 import type { MonitorContext } from './types';
@@ -43,7 +52,9 @@ function isEventOwnershipValid(ctx: MonitorContext, data: unknown): boolean {
   const expectedAppId = ctx.lark.account.appId;
   if (!expectedAppId) return true; // appId not configured — skip check
 
-  const eventAppId = (data as Record<string, unknown>).app_id;
+  const raw = data as Record<string, unknown>;
+  const header = raw.header as Record<string, unknown> | undefined;
+  const eventAppId = header?.app_id ?? raw.app_id;
   if (eventAppId == null) return true; // SDK did not provide app_id — defensive skip
 
   if (eventAppId !== expectedAppId) {
@@ -292,6 +303,65 @@ export async function handleCommentEvent(ctx: MonitorContext, data: unknown): Pr
     });
   } catch (err) {
     error(`feishu[${accountId}]: error handling comment event: ${String(err)}`);
+  }
+}
+
+export async function handleTaskCommentEvent(ctx: MonitorContext, data: unknown): Promise<void> {
+  if (!isEventOwnershipValid(ctx, data)) return;
+  const { accountId, log, error } = ctx;
+  try {
+    const parsed = parseFeishuTaskCommentUpdatedEventPayload(data);
+    if (!parsed) {
+      log(`feishu[${accountId}]: invalid task comment event payload, skipping`);
+      return;
+    }
+
+    const event = parsed as FeishuTaskCommentUpdatedEvent;
+    const taskId = event.task_id ?? '';
+    const commentId = event.comment_id ?? '';
+    const parentId = event.parent_id ?? '';
+    const objType = event.obj_type;
+    const changeType = resolveFeishuTaskCommentChangeType(objType);
+    const eventTimestamp = event.create_time;
+
+    if (changeType === 'unknown') {
+      log(
+        `feishu[${accountId}]: unsupported task comment obj_type=${String(objType)} ` +
+          `(task=${taskId}, comment=${commentId}), skipping`,
+      );
+      return;
+    }
+
+    log(
+      `feishu[${accountId}]: task comment event: ` +
+        `change=${changeType}, task=${taskId}, comment=${commentId}` +
+        `${parentId ? `, parent=${parentId}` : ''}`,
+    );
+
+    const dedupKey =
+      event.event_id ??
+      `task-comment:${taskId}:${commentId}:${parentId || 'root'}:${String(objType)}:${eventTimestamp ?? 'unknown'}`;
+    if (!ctx.messageDedup.tryRecord(dedupKey, accountId)) {
+      log(`feishu[${accountId}]: duplicate task comment event ${dedupKey}, skipping`);
+      return;
+    }
+
+    if (isMessageExpired(eventTimestamp)) {
+      log(`feishu[${accountId}]: task comment event expired, discarding`);
+      return;
+    }
+
+    if (changeType === 'comment_reply' || changeType === 'comment_create') {
+      const recovered = await handleAskUserTaskCommentEvent(event, ctx.cfg, accountId);
+      if (recovered) {
+        log(`feishu[${accountId}]: recovered pending ask-user-question from task comment ${commentId}`);
+        return;
+      }
+    }
+
+    log(`feishu[${accountId}]: task comment event ignored (change=${changeType}, task=${taskId}, comment=${commentId})`);
+  } catch (err) {
+    error(`feishu[${accountId}]: error handling task comment event: ${String(err)}`);
   }
 }
 

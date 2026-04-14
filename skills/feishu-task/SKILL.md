@@ -1,14 +1,13 @@
 ---
 name: feishu-task
 description: |
-  飞书任务管理工具,用于创建、查询、更新任务和清单。
+  飞书任务管理工具，用于创建、查询、更新任务、清单、分组、评论和子任务（统一通过 `auth_type=user|tenant` 切换身份）。
 
   **当以下情况时使用此 Skill**:
-  (1) 需要创建、查询、更新任务
-  (2) 需要创建、管理任务清单
-  (3) 需要查看任务列表或清单内的任务
+  (1) 需要创建、查询、更新任务/清单/分组/评论/子任务
+  (2) 需要查看任务列表或清单内的任务、分组内任务、任务评论
   (4) 用户提到"任务"、"待办"、"to-do"、"清单"、"task"
-  (5) 需要设置任务负责人、关注人、截止时间、添加成员
+  (5) 需要设置任务负责人、关注人、截止时间、添加成员，或在任务里追加评论
 ---
 
 # 飞书任务管理
@@ -39,6 +38,13 @@ description: |
 | 创建清单 | feishu_task_tasklist | create | name | - | members |
 | 查看清单任务 | feishu_task_tasklist | tasks | tasklist_guid | - | completed |
 | 添加清单成员 | feishu_task_tasklist | add_members | tasklist_guid, members[] | - | - |
+| 创建分组 | feishu_task_section | create | tasklist_guid, name | - | auth_type |
+| 查看分组任务 | feishu_task_section | tasks | section_guid | - | completed, auth_type |
+| 创建子任务 | feishu_task_subtask | create | task_guid, summary | - | due, members, auth_type |
+| 列出子任务 | feishu_task_subtask | list | task_guid | - | page_size, auth_type |
+| 添加评论 | feishu_task_comment | create | task_guid, content | - | reply_to_comment_id, auth_type |
+| 列出评论 | feishu_task_comment | list | resource_id(=task_guid) | - | page_size, auth_type |
+| 获取评论详情 | feishu_task_comment | get | comment_id | - | auth_type |
 
 ---
 
@@ -51,6 +57,10 @@ description: |
   - ⚠️ 使用 `user` 身份时，只能查看和编辑**自己是成员的任务**。
   - ⚠️ **如果创建时没把自己加入成员，后续无法编辑该任务**。
 - **`tenant`**：应用身份（tenant_access_token）。当用户身份不满足要求时，使用应用身份。如果创建的任务没有把用户加入成员，用户可能看不见。
+
+**选择建议**：
+- 用户说“我的任务 / 我负责的 / 按我身份执行”时，优先 `auth_type="user"`
+- 用户说“用应用身份 / tenant_access_token / 机器人代办 / 后台批处理”时，使用 `auth_type="tenant"`
 
 **自动保护机制**：
 - 传入 `current_user_id` 参数（从 SenderId 获取）

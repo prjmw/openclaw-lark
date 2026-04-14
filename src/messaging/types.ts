@@ -126,6 +126,25 @@ export interface FeishuDriveCommentEvent {
   action_time?: string;
 }
 
+export interface FeishuTaskCommentUpdatedEvent {
+  app_id?: string;
+  event_id?: string;
+  event_type?: string;
+  create_time?: string;
+  header?: {
+    event_id?: string;
+    event_type?: string;
+    create_time?: string;
+    token?: string;
+    app_id?: string;
+    tenant_key?: string;
+  };
+  task_id?: string;
+  comment_id?: string;
+  parent_id?: string;
+  obj_type?: number;
+}
+
 export interface FeishuBotAddedEvent {
   chat_id: string;
   operator_id: {

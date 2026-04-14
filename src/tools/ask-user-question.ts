@@ -19,11 +19,15 @@
 import { randomUUID } from 'node:crypto';
 import type { ClawdbotConfig, OpenClawPluginApi } from 'openclaw/plugin-sdk';
 import { Type } from '@sinclair/typebox';
+import type { FeishuTaskCommentUpdatedEvent } from '../messaging/types';
+import { assertLarkOk, formatLarkError } from '../core/api-error';
+import { LarkClient } from '../core/lark-client';
 import { getTicket, withTicket } from '../core/lark-ticket';
 import { larkLogger } from '../core/lark-logger';
 import { createCardEntity, sendCardByCardId, updateCardKitCard } from '../card/cardkit';
 import { buildQueueKey, enqueueFeishuChatTask } from '../channel/chat-queue';
 import { handleFeishuMessage } from '../messaging/inbound/handler';
+import { dispatchSyntheticTextMessage } from '../messaging/inbound/synthetic-message';
 import { checkToolRegistration, formatToolError, formatToolResult } from './helpers';
 
 const log = larkLogger('tools/ask-user-question');
@@ -66,22 +70,38 @@ interface QuestionItem {
   multiSelect: boolean;
 }
 
-/** Lightweight context stored while awaiting user response (no Promise / timeout). */
-interface QuestionContext {
+type QuestionChannel = 'card' | 'task_comment';
+
+interface BaseQuestionContext {
   questionId: string;
-  chatId: string;
   accountId: string;
   senderOpenId: string;
-  cardId: string;
   cfg: ClawdbotConfig;
   questions: QuestionItem[];
+  chatId: string;
   threadId?: string;
   chatType?: 'p2p' | 'group';
   messageId: string;
-  cardSequence: number;
+  channel: QuestionChannel;
   submitted: boolean;
   ttlTimer: ReturnType<typeof setTimeout>;
 }
+
+interface CardQuestionContext extends BaseQuestionContext {
+  channel: 'card';
+  cardId: string;
+  cardSequence: number;
+}
+
+interface TaskCommentQuestionContext extends BaseQuestionContext {
+  channel: 'task_comment';
+  taskGuid: string;
+  rootCommentId?: string;
+  promptCommentId: string;
+}
+
+type QuestionContext = CardQuestionContext | TaskCommentQuestionContext;
+type QuestionContextInit = Omit<CardQuestionContext, 'ttlTimer'> | Omit<TaskCommentQuestionContext, 'ttlTimer'>;
 
 // ---------------------------------------------------------------------------
 // Pending Question Registry
@@ -96,6 +116,15 @@ const pendingQuestions = new Map<string, QuestionContext>();
  * overwrite each other's fallback entry.
  */
 const byChatContext = new Map<string, Set<string>>();
+const byTaskCommentParent = new Map<string, Set<string>>();
+
+function buildTaskCommentParentKey(accountId: string, taskGuid: string, parentCommentId: string): string {
+  return `${accountId}:${taskGuid}:${parentCommentId}`;
+}
+
+function isCardQuestionContext(ctx: QuestionContext): ctx is CardQuestionContext {
+  return ctx.channel === 'card';
+}
 
 /** Arm (or re-arm) the TTL expiry timer for a pending question. */
 function armTtlTimer(ctx: QuestionContext, delayMs: number): void {
@@ -105,7 +134,7 @@ function armTtlTimer(ctx: QuestionContext, delayMs: number): void {
     if (ctx.submitted) return; // user already submitted, injection in progress
     log.info(`question ${ctx.questionId} expired (TTL ${delayMs}ms)`);
     consumePendingQuestion(ctx.questionId);
-    // Update card to expired state (fire-and-forget)
+    if (!isCardQuestionContext(ctx)) return;
     setImmediate(async () => {
       try {
         await updateCardToExpired(ctx);
@@ -116,16 +145,32 @@ function armTtlTimer(ctx: QuestionContext, delayMs: number): void {
   }, delayMs);
 }
 
-function storePendingQuestion(init: Omit<QuestionContext, 'ttlTimer'>): void {
+function storePendingQuestion(init: QuestionContextInit): void {
   const ctx = init as QuestionContext;
   pendingQuestions.set(ctx.questionId, ctx);
-  const baseKey = buildQueueKey(ctx.accountId, ctx.chatId);
-  let set = byChatContext.get(baseKey);
-  if (!set) {
-    set = new Set();
-    byChatContext.set(baseKey, set);
+  if (isCardQuestionContext(ctx)) {
+    const baseKey = buildQueueKey(ctx.accountId, ctx.chatId);
+    let set = byChatContext.get(baseKey);
+    if (!set) {
+      set = new Set();
+      byChatContext.set(baseKey, set);
+    }
+    set.add(ctx.questionId);
+  } else {
+    const parentKey = buildTaskCommentParentKey(ctx.accountId, ctx.taskGuid, ctx.promptCommentId);
+    let set = byTaskCommentParent.get(parentKey);
+    if (!set) {
+      set = new Set();
+      byTaskCommentParent.set(parentKey, set);
+    }
+    set.add(ctx.questionId);
+    log.info(
+      `registered task comment question ${ctx.questionId}: ` +
+        `account=${ctx.accountId}, task=${ctx.taskGuid}, root=${ctx.rootCommentId}, ` +
+        `prompt=${ctx.promptCommentId}, target=${ctx.senderOpenId}, parentKey=${parentKey}, ` +
+        `pending=${set.size}`,
+    );
   }
-  set.add(ctx.questionId);
 
   armTtlTimer(ctx, PENDING_QUESTION_TTL_MS);
 }
@@ -135,11 +180,20 @@ function consumePendingQuestion(questionId: string): void {
   if (ctx) {
     clearTimeout(ctx.ttlTimer);
     pendingQuestions.delete(questionId);
-    const baseKey = buildQueueKey(ctx.accountId, ctx.chatId);
-    const set = byChatContext.get(baseKey);
-    if (set) {
-      set.delete(questionId);
-      if (set.size === 0) byChatContext.delete(baseKey);
+    if (isCardQuestionContext(ctx)) {
+      const baseKey = buildQueueKey(ctx.accountId, ctx.chatId);
+      const set = byChatContext.get(baseKey);
+      if (set) {
+        set.delete(questionId);
+        if (set.size === 0) byChatContext.delete(baseKey);
+      }
+    } else {
+      const parentKey = buildTaskCommentParentKey(ctx.accountId, ctx.taskGuid, ctx.promptCommentId);
+      const set = byTaskCommentParent.get(parentKey);
+      if (set) {
+        set.delete(questionId);
+        if (set.size === 0) byTaskCommentParent.delete(parentKey);
+      }
     }
   }
 }
@@ -151,14 +205,14 @@ function consumePendingQuestion(questionId: string): void {
  * Only returns a result when exactly one non-submitted pending question
  * exists for this chat — refuses to guess when ambiguous.
  */
-function findQuestionByChat(accountId: string, chatId: string): QuestionContext | undefined {
+function findQuestionByChat(accountId: string, chatId: string): CardQuestionContext | undefined {
   const baseKey = buildQueueKey(accountId, chatId);
   const set = byChatContext.get(baseKey);
   if (!set) return undefined;
-  let match: QuestionContext | undefined;
+  let match: CardQuestionContext | undefined;
   for (const qid of set) {
     const ctx = pendingQuestions.get(qid);
-    if (ctx && !ctx.submitted) {
+    if (ctx && isCardQuestionContext(ctx) && !ctx.submitted) {
       if (match) {
         // Ambiguous: more than one non-submitted question in this chat.
         // Refuse to guess — operationId is required to disambiguate.
@@ -168,6 +222,64 @@ function findQuestionByChat(accountId: string, chatId: string): QuestionContext 
       match = ctx;
     }
   }
+  return match;
+}
+
+function findTaskCommentQuestionByParent(
+  accountId: string,
+  taskGuid: string,
+  parentCommentId: string,
+): TaskCommentQuestionContext | undefined {
+  const parentKey = buildTaskCommentParentKey(accountId, taskGuid, parentCommentId);
+  const set = byTaskCommentParent.get(parentKey);
+  if (!set) {
+    log.info(
+      `task-comment lookup miss: no pending set for account=${accountId}, task=${taskGuid}, ` +
+        `parent=${parentCommentId}, parentKey=${parentKey}`,
+    );
+    return undefined;
+  }
+  log.info(
+    `task-comment lookup: account=${accountId}, task=${taskGuid}, parent=${parentCommentId}, ` +
+      `parentKey=${parentKey}, candidates=${set.size}`,
+  );
+  let match: TaskCommentQuestionContext | undefined;
+  for (const questionId of set) {
+    const ctx = pendingQuestions.get(questionId);
+    if (!ctx) {
+      log.warn(`task-comment lookup candidate ${questionId} missing from pendingQuestions`);
+      continue;
+    }
+    if (ctx.channel !== 'task_comment') {
+      log.info(
+        `task-comment lookup skip ${questionId}: channel=${ctx.channel}, ` +
+          `expected=task_comment`,
+      );
+      continue;
+    }
+    if (ctx.submitted) {
+      log.info(`task-comment lookup skip ${questionId}: already submitted`);
+      continue;
+    }
+    log.info(
+      `task-comment lookup candidate matched ${questionId}: ` +
+        `task=${ctx.taskGuid}, root=${ctx.rootCommentId}, prompt=${ctx.promptCommentId}, ` +
+        `target=${ctx.senderOpenId}`,
+    );
+    if (match) {
+      log.warn(
+        `task-comment fallback ambiguous: multiple pending questions in ${parentKey} ` +
+          `(existing=${match.questionId}, another=${questionId})`,
+      );
+      return undefined;
+    }
+    match = ctx;
+  }
+  if (!match) {
+    log.info(`task-comment lookup miss after filtering: parentKey=${parentKey}`);
+    return undefined;
+  }
+  log.info(`task-comment lookup resolved question ${match.questionId} for parentKey=${parentKey}`);
   return match;
 }
 
@@ -259,12 +371,14 @@ export function handleAskUserAction(data: unknown, _cfg: ClawdbotConfig, account
   if (action !== ACTION_SUBMIT) return undefined;
 
   // Look up pending question: try operationId first, then chat-scoped fallback
-  let ctx: QuestionContext | undefined;
+  let ctx: CardQuestionContext | undefined;
   if (operationId) {
-    ctx = pendingQuestions.get(operationId);
+    const pending = pendingQuestions.get(operationId);
+    if (pending && isCardQuestionContext(pending)) {
+      ctx = pending;
+    }
   }
   if (!ctx && openChatId) {
-    // Targeted fallback: exact accountId:chatId match via secondary index
     ctx = findQuestionByChat(accountId, openChatId);
     if (ctx) {
       log.info(`resolved question via chat-scoped fallback: ${ctx.questionId}`);
@@ -368,7 +482,7 @@ export function handleAskUserAction(data: unknown, _cfg: ClawdbotConfig, account
  * them in a new turn. Follows the same pattern as oauth.ts for auth-complete
  * synthetic messages. Retries on failure to prevent answer loss.
  */
-async function injectAnswerSyntheticMessage(ctx: QuestionContext, answers: Record<string, string>): Promise<void> {
+async function injectAnswerSyntheticMessage(ctx: CardQuestionContext, answers: Record<string, string>): Promise<void> {
   const syntheticMsgId = `${ctx.messageId}:ask-user-answer:${ctx.questionId}`;
 
   // Format answers as readable text for the AI
@@ -483,6 +597,253 @@ async function injectAnswerSyntheticMessage(ctx: QuestionContext, answers: Recor
     log.info(`reverted card to submittable state for question ${ctx.questionId}`);
   } catch (err) {
     log.warn(`failed to revert card to submittable state: ${err}`);
+  }
+}
+
+function buildTaskCommentQuestionText(questions: QuestionItem[]): string {
+  const lines = ['我需要你补充以下信息，请直接回复这条评论：'];
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    lines.push(`${i + 1}. ${q.header}: ${q.question}`);
+    if (q.options.length > 0) {
+      lines.push(`   可选项：${q.options.map((opt) => opt.label).join(' / ')}`);
+    }
+  }
+  lines.push('请直接回复这条评论，我收到后会继续处理。');
+  return lines.join('\n');
+}
+
+async function createTaskQuestionComment(params: {
+  cfg: ClawdbotConfig;
+  accountId: string;
+  taskGuid: string;
+  rootCommentId?: string;
+  content: string;
+}): Promise<string> {
+  const client = LarkClient.fromCfg(params.cfg, params.accountId).sdk;
+  const res = await client.task.v2.comment.create({
+    params: {
+      user_id_type: 'open_id',
+    },
+    data: {
+      content: params.content,
+      resource_type: 'task',
+      resource_id: params.taskGuid,
+      ...(params.rootCommentId ? { reply_to_comment_id: params.rootCommentId } : {}),
+    },
+  });
+  assertLarkOk(res);
+  const commentId = res.data?.comment?.id;
+  if (!commentId) {
+    throw new Error('Failed to create task question comment: no comment id returned');
+  }
+  return commentId;
+}
+
+async function getTaskCommentDetail(params: {
+  cfg: ClawdbotConfig;
+  accountId: string;
+  commentId: string;
+}): Promise<Record<string, unknown>> {
+  const client = LarkClient.fromCfg(params.cfg, params.accountId).sdk;
+  const res = await client.task.v2.comment.get({
+    path: {
+      comment_id: params.commentId,
+    },
+    params: {
+      user_id_type: 'open_id',
+    },
+  });
+  assertLarkOk(res);
+  const comment = res.data?.comment as Record<string, unknown> | undefined;
+  if (!comment) {
+    throw new Error(`Failed to get task comment ${params.commentId}`);
+  }
+  log.info(
+    `loaded task comment detail ${params.commentId}: ` +
+      `keys=${Object.keys(comment).sort().join(',') || 'none'}, ` +
+      `authorFields=${JSON.stringify(summarizeTaskCommentAuthorFields(comment))}`,
+  );
+  return comment;
+}
+
+function summarizeTaskCommentAuthorFields(comment: Record<string, unknown>): Record<string, unknown> {
+  const user = comment.user as Record<string, unknown> | undefined;
+  const creator = comment.creator as Record<string, unknown> | undefined;
+  const operator = comment.operator as Record<string, unknown> | undefined;
+  return {
+    user_id: comment.user_id,
+    user,
+    creator,
+    operator,
+  };
+}
+
+function readTaskCommentAuthorOpenId(comment: Record<string, unknown>): string | undefined {
+  const candidates = [
+    ['comment.user_id', comment.user_id],
+    ['comment.user.open_id', (comment.user as Record<string, unknown> | undefined)?.open_id],
+    ['comment.user.user_id', (comment.user as Record<string, unknown> | undefined)?.user_id],
+    ['comment.creator.id', (comment.creator as Record<string, unknown> | undefined)?.id],
+    ['comment.creator.open_id', (comment.creator as Record<string, unknown> | undefined)?.open_id],
+    ['comment.creator.user_id', (comment.creator as Record<string, unknown> | undefined)?.user_id],
+    ['comment.operator.open_id', (comment.operator as Record<string, unknown> | undefined)?.open_id],
+    ['comment.operator.user_id', (comment.operator as Record<string, unknown> | undefined)?.user_id],
+  ];
+  const matched = candidates.find(
+    (entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0,
+  );
+  log.info(
+    `task comment author candidates: ${candidates
+      .map(([field, value]) => `${field}=${typeof value === 'string' && value.trim().length > 0 ? value : 'empty'}`)
+      .join(', ')}`,
+  );
+  if (!matched) {
+    log.warn(`task comment author unresolved: raw=${JSON.stringify(summarizeTaskCommentAuthorFields(comment))}`);
+    return undefined;
+  }
+  log.info(`task comment author resolved from ${matched[0]}=${matched[1]}`);
+  return matched[1];
+}
+
+function readTaskCommentContent(comment: Record<string, unknown>): string | undefined {
+  const content = comment.content;
+  return typeof content === 'string' && content.trim().length > 0 ? content.trim() : undefined;
+}
+
+function buildTaskCommentSyntheticText(ctx: TaskCommentQuestionContext, replyText: string): string {
+  const questionLines = ctx.questions.map((question, index) => `${index + 1}. ${question.header}: ${question.question}`);
+  return ['用户在任务评论中回复了你的问题。', '原问题：', ...questionLines, '评论回复：', replyText].join('\n');
+}
+
+async function injectTaskCommentSyntheticMessage(
+  ctx: TaskCommentQuestionContext,
+  replyCommentId: string,
+  replyText: string,
+): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= INJECT_MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      log.info(`retrying task comment synthetic injection (attempt ${attempt + 1}) for question ${ctx.questionId}`);
+      await new Promise((resolve) => setTimeout(resolve, INJECT_RETRY_DELAY_MS));
+    }
+    try {
+      const status = await dispatchSyntheticTextMessage({
+        cfg: ctx.cfg,
+        accountId: ctx.accountId,
+        chatId: ctx.chatId,
+        senderOpenId: ctx.senderOpenId,
+        text: buildTaskCommentSyntheticText(ctx, replyText),
+        syntheticMessageId: `${ctx.messageId}:ask-user-task-comment-answer:${ctx.questionId}:${replyCommentId}`,
+        replyToMessageId: ctx.messageId,
+        chatType: ctx.chatType,
+        threadId: ctx.threadId,
+        runtime: {
+          log: (msg: string) => log.info(msg),
+          error: (msg: string) => log.error(msg),
+        },
+        forceMention: true,
+      });
+      consumePendingQuestion(ctx.questionId);
+      log.info(`task comment synthetic answer dispatched (${status}) for question ${ctx.questionId}`);
+      return;
+    } catch (err) {
+      lastError = err;
+      log.warn(`task comment synthetic message attempt ${attempt + 1} failed: ${err}`);
+    }
+  }
+  ctx.submitted = false;
+  armTtlTimer(ctx, PENDING_QUESTION_TTL_MS);
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+export async function handleAskUserTaskCommentEvent(
+  event: FeishuTaskCommentUpdatedEvent,
+  cfg: ClawdbotConfig,
+  accountId: string,
+): Promise<boolean> {
+  const taskGuid = event.task_id;
+  const replyCommentId = event.comment_id;
+  const parentCommentId = event.parent_id;
+  if (!taskGuid || !replyCommentId) {
+    log.info(
+      `task comment recovery skipped: missing identifiers ` +
+        `(task=${taskGuid ?? 'unknown'}, comment=${replyCommentId ?? 'unknown'}, ` +
+        `parent=${parentCommentId ?? 'unknown'})`,
+    );
+    return false;
+  }
+
+  let ctx = parentCommentId ? findTaskCommentQuestionByParent(accountId, taskGuid, parentCommentId) : undefined;
+
+  if (!ctx && (!parentCommentId || parentCommentId === '0')) {
+    const candidateKeys: Array<[string, TaskCommentQuestionContext]> = [];
+    for (const [parentKey, set] of byTaskCommentParent.entries()) {
+      const [acc, task, prompt] = parentKey.split(':');
+      if (acc !== accountId || task !== taskGuid || !prompt) continue;
+      for (const qid of set) {
+        const c = pendingQuestions.get(qid);
+        if (c && c.channel === 'task_comment' && !c.submitted) {
+          candidateKeys.push([parentKey, c]);
+        }
+      }
+    }
+    if (candidateKeys.length === 1) {
+      ctx = candidateKeys[0][1];
+      log.info(
+        `task-comment fallback (no parent): resolved single pending question ${ctx.questionId} ` +
+          `for account=${accountId}, task=${taskGuid}`,
+      );
+    } else if (candidateKeys.length > 1) {
+      log.warn(
+        `task-comment fallback (no parent) ambiguous: ${candidateKeys.length} pending questions for ` +
+          `account=${accountId}, task=${taskGuid}`,
+      );
+    } else {
+      log.info(
+        `task-comment fallback (no parent) miss: no pending questions for account=${accountId}, task=${taskGuid}`,
+      );
+    }
+  }
+
+  if (!ctx) {
+    log.info(
+      `task comment recovery skipped: no matching pending question ` +
+        `(account=${accountId}, task=${taskGuid}, comment=${replyCommentId}, parent=${parentCommentId ?? 'none'})`,
+    );
+    return false;
+  }
+
+  try {
+    const comment = await getTaskCommentDetail({
+      cfg,
+      accountId,
+      commentId: replyCommentId,
+    });
+    const authorOpenId = readTaskCommentAuthorOpenId(comment);
+    log.info(
+      `task comment recovery author check: question=${ctx.questionId}, ` +
+        `target=${ctx.senderOpenId}, actual=${authorOpenId ?? 'unknown'}`,
+    );
+    if (!authorOpenId || authorOpenId !== ctx.senderOpenId) {
+      log.info(
+        `ignoring task comment reply for question ${ctx.questionId}: target=${ctx.senderOpenId}, actual=${authorOpenId ?? 'unknown'}`,
+      );
+      return false;
+    }
+    const replyText = readTaskCommentContent(comment);
+    if (!replyText) {
+      log.warn(`task comment ${replyCommentId} has empty content, skipping question recovery`);
+      return false;
+    }
+
+    ctx.submitted = true;
+    await injectTaskCommentSyntheticMessage(ctx, replyCommentId, replyText);
+    return true;
+  } catch (err) {
+    ctx.submitted = false;
+    log.warn(`failed to recover task comment question ${ctx.questionId}: ${formatLarkError(err)}`);
+    return false;
   }
 }
 
@@ -842,7 +1203,7 @@ function buildExpiredCard(questions: QuestionItem[]): Record<string, unknown> {
 // Card Update Helpers
 // ---------------------------------------------------------------------------
 
-async function updateCardToAnswered(ctx: QuestionContext, answers: Record<string, string>): Promise<void> {
+async function updateCardToAnswered(ctx: CardQuestionContext, answers: Record<string, string>): Promise<void> {
   const card = buildAnsweredCard(ctx.questions, answers);
   ctx.cardSequence++;
   await updateCardKitCard({
@@ -854,7 +1215,7 @@ async function updateCardToAnswered(ctx: QuestionContext, answers: Record<string
   });
 }
 
-async function updateCardToExpired(ctx: QuestionContext): Promise<void> {
+async function updateCardToExpired(ctx: CardQuestionContext): Promise<void> {
   const card = buildExpiredCard(ctx.questions);
   ctx.cardSequence++;
   await updateCardKitCard({
@@ -866,7 +1227,7 @@ async function updateCardToExpired(ctx: QuestionContext): Promise<void> {
   });
 }
 
-async function updateCardToSubmittable(ctx: QuestionContext): Promise<void> {
+async function updateCardToSubmittable(ctx: CardQuestionContext): Promise<void> {
   const card = buildAskUserCard(ctx.questions, ctx.questionId);
   ctx.cardSequence++;
   await updateCardKitCard({
@@ -909,6 +1270,33 @@ const AskUserQuestionSchema = Type.Object({
       maxItems: 6,
     },
   ),
+  channel: Type.Optional(
+    Type.Union(
+      [
+        Type.Object({
+          type: Type.Literal('card'),
+        }),
+        Type.Object({
+          type: Type.Literal('task_comment'),
+          taskGuid: Type.String({ description: 'Task GUID where the question should be posted' }),
+          rootCommentId: Type.Optional(
+            Type.String({
+              description:
+                'Optional root task comment ID where the question should be posted. ' +
+                'Leave empty or omit it to create a top-level task comment.',
+            }),
+          ),
+          targetUserOpenId: Type.Optional(
+            Type.String({ description: 'Open ID of the user expected to reply. Defaults to the current sender.' }),
+          ),
+        }),
+      ],
+      {
+        description:
+          'Optional delivery channel for the question. Use `card` for an interactive card or `task_comment` to ask in a task comment thread.',
+      },
+    ),
+  ),
 });
 
 // ---------------------------------------------------------------------------
@@ -926,8 +1314,9 @@ export function registerAskUserQuestionTool(api: OpenClawPluginApi): void {
     name: toolName,
     label: 'Ask User Question',
     description:
-      'Ask the user a question via an interactive Feishu card. ' +
-      'Returns immediately after sending the card. ' +
+      'Ask the user a question via Feishu. Supports two channels: interactive card (`channel.type = "card"`)' +
+      ' and task comment (`channel.type = "task_comment"`). ' +
+      'Returns immediately after sending the question. ' +
       "The user's answers will arrive as a new message in the conversation. " +
       'Do NOT poll or re-call this tool — just wait for the response message. ' +
       'For selection questions, provide options (renders as dropdown). ' +
@@ -935,7 +1324,12 @@ export function registerAskUserQuestionTool(api: OpenClawPluginApi): void {
     parameters: AskUserQuestionSchema,
 
     async execute(_toolCallId: string, params: unknown) {
-      const { questions } = params as { questions: QuestionItem[] };
+      const { questions, channel } = params as {
+        questions: QuestionItem[];
+        channel?:
+          | { type: 'card' }
+          | { type: 'task_comment'; taskGuid: string; rootCommentId?: string; targetUserOpenId?: string };
+      };
 
       const ticket = getTicket();
       if (!ticket) {
@@ -950,7 +1344,54 @@ export function registerAskUserQuestionTool(api: OpenClawPluginApi): void {
       const questionId = randomUUID();
       log.info(`creating ask-user-question: id=${questionId}, questions=${questions.length}, chat=${chatId}`);
 
-      // 1. Build and send card
+      if (channel?.type === 'task_comment') {
+        const targetUserOpenId = channel.targetUserOpenId ?? senderOpenId;
+        let promptCommentId: string;
+        log.info(
+          `creating ask-user-question via task comment: ` +
+            `question=${questionId}, account=${accountId}, task=${channel.taskGuid}, ` +
+            `root=${channel.rootCommentId}, target=${targetUserOpenId}, questions=${questions.length}`,
+        );
+        try {
+          promptCommentId = await createTaskQuestionComment({
+            cfg,
+            accountId,
+            taskGuid: channel.taskGuid,
+            rootCommentId: channel.rootCommentId,
+            content: buildTaskCommentQuestionText(questions),
+          });
+        } catch (err) {
+          log.error(`failed to send task question comment: ${err}`);
+          return formatToolError(`Failed to send task question comment: ${formatLarkError(err)}`);
+        }
+
+        storePendingQuestion({
+          questionId,
+          accountId,
+          senderOpenId: targetUserOpenId,
+          cfg,
+          questions,
+          chatId,
+          threadId,
+          chatType: ticket.chatType,
+          messageId: ticket.messageId,
+          channel: 'task_comment',
+          taskGuid: channel.taskGuid,
+          rootCommentId: channel.rootCommentId,
+          promptCommentId,
+          submitted: false,
+        });
+
+        log.info(`question ${questionId} task comment sent, returning pending status`);
+        return formatToolResult({
+          status: 'pending',
+          questionId,
+          message:
+            'Question comment sent to the task thread. The target user reply will arrive as a follow-up message ' +
+            'in this conversation. Do NOT call this tool again for the same question — just wait for the response message.',
+        });
+      }
+
       const card = buildAskUserCard(questions, questionId);
 
       let cardId: string | null;
@@ -992,6 +1433,7 @@ export function registerAskUserQuestionTool(api: OpenClawPluginApi): void {
         chatType: ticket.chatType,
         messageId: ticket.messageId,
         cardSequence: 1,
+        channel: 'card',
         submitted: false,
       });
 
