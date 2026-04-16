@@ -22,6 +22,7 @@ import {
   registerFeishuTaskSubtaskTool,
   registerFeishuTaskTaskTool,
   registerFeishuTaskTasklistTool,
+  registerFeishuTaskAgentTool,
 } from './task/index';
 import {
   registerFeishuBitableAppTableFieldTool,
@@ -64,6 +65,7 @@ export function registerOapiTools(api: OpenClawPluginApi): void {
   registerFeishuTaskSectionTool(api);
   registerFeishuTaskCommentTool(api);
   registerFeishuTaskSubtaskTool(api);
+  registerFeishuTaskAgentTool(api);
 
   // Bitable tools
   registerFeishuBitableAppTool(api);
