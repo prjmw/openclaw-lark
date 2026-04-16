@@ -75,7 +75,27 @@ const BRAND_TO_DOMAIN: Record<string, Lark.Domain> = {
 
 /** Map a `LarkBrand` to the SDK `domain` parameter. */
 function resolveBrand(brand: LarkBrand | undefined): Lark.Domain | string {
-  return BRAND_TO_DOMAIN[brand ?? 'feishu'] ?? brand!.replace(/\/+$/, '');
+  // 优先使用配置的 brand，如果没有则使用默认值 'feishu'
+  const resolvedBrand = brand ?? 'feishu';
+  // 检查是否是预定义的品牌
+  if (BRAND_TO_DOMAIN[resolvedBrand]) {
+    return BRAND_TO_DOMAIN[resolvedBrand];
+  }
+  // 对于自定义域名，确保格式正确
+  let domain = resolvedBrand.replace(/\/+$/, '');
+  // 如果域名没有包含协议，添加 https://
+  if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
+    domain = `https://${domain}`;
+  }
+  // 确保域名是完整的 URL 格式，并且不包含路径
+  try {
+    const url = new URL(domain);
+    // 只保留协议和域名部分
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    // 如果不是有效的 URL，重新构建
+    return `https://${domain}`;
+  }
 }
 
 // ---------------------------------------------------------------------------
