@@ -9,30 +9,33 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { OpenClawPluginApi } from 'openclaw/plugin-sdk';
-import { Type } from '@sinclair/typebox';
+import type {OpenClawPluginApi} from 'openclaw/plugin-sdk';
+import {Type} from '@sinclair/typebox';
 
-import { createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
+import {createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool} from '../helpers';
 
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
 
 const FeishuTaskStepsSchema = Type.Union([
-  Type.Object({
-    action: Type.Union([Type.Literal('ping'), Type.Literal('noop')]),
-  }),
+    Type.Object({
+        action: Type.Union([Type.Literal('append')]),
+    }),
 ]);
 
-type FeishuTaskStepsParams = { action: 'ping' | 'noop' };
+type FeishuTaskStepsParams = { action: 'append' };
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function resolvePathForAction(_action: FeishuTaskStepsParams['action']): { path: string; env: string[] } {
-  // Skeleton only: keep a stable place for future API path resolution.
-  return { path: '', env: [] };
+function resolvePathForAction(action: FeishuTaskStepsParams['action']): { path: string; env: string[] } {
+    // Skeleton only: keep a stable place for future API path resolution.
+    if (action === 'append') {
+        return { path: '/open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2', env: [] };
+    }
+    return {path: '/open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2', env: []};
 }
 
 // ---------------------------------------------------------------------------
@@ -40,41 +43,48 @@ function resolvePathForAction(_action: FeishuTaskStepsParams['action']): { path:
 // ---------------------------------------------------------------------------
 
 export function registerFeishuTaskStepsTool(api: OpenClawPluginApi): void {
-  if (!api.config) return;
-  const cfg = api.config;
+    if (!api.config) return;
+    const cfg = api.config;
 
-  const { toolClient, log } = createToolContext(api, 'feishu_task_steps');
+    const {toolClient, log} = createToolContext(api, 'feishu_task_steps');
 
-  registerTool(
-    api,
-    {
-      name: 'feishu_task_steps',
-      label: 'Feishu Task Steps',
-      description: '飞书任务步骤（Task Steps）工具骨架。当前仅提供最小可运行入口，后续可扩展具体 steps 相关 actions 与参数。',
-      parameters: FeishuTaskStepsSchema,
-      async execute(_toolCallId: string, params: unknown) {
-        const p = params as FeishuTaskStepsParams;
-        try {
-          const resolved = resolvePathForAction(p.action);
-          const client = toolClient();
+    registerTool(
+        api,
+        {
+            name: 'feishu_task_steps',
+            label: 'Feishu Task Steps',
+            description: '飞书任务步骤（Task Steps）工具。用于记录任务步骤。',
+            parameters: FeishuTaskStepsSchema,
+            async execute(_toolCallId: string, params: unknown) {
+                const p = params as FeishuTaskStepsParams;
+                try {
+                    const normalizedAction = p.action;
 
-          // Minimal runnable entry:
-          // - ping/noop returns a structured payload
-          // - keeps client/toolContext in place for future API calls
-          log.info(`${p.action}: path=${resolved.path || '<empty>'}`);
+                    const resolved = resolvePathForAction(p.action);
+                    const client = toolClient();
 
-          void client; // keep for incremental implementation without lint churn
+                    // Minimal runnable entry:
+                    // - ping/noop returns a structured payload
+                    // - keeps client/toolContext in place for future API calls
 
-          return json({
-            ok: true,
-            action: p.action,
-          });
-        } catch (err) {
-          return await handleInvokeErrorWithAutoAuth(err, cfg);
-        }
-      },
-    },
-    { name: 'feishu_task_steps' },
-  );
+                    const as = 'tenant';
+                    log.info(`${p.action}: path=${resolved.path}, as=${as}`);
+
+                    const res = await client.invokeByPath('feishu_task_steps.append', resolved.path, {
+                        method: 'POST',
+                        as,
+                        headers: {
+                            'x-tt-env': 'boe_task_agentqa'
+                        },
+                    });
+                    return json(res);
+
+                } catch (err) {
+                    return await handleInvokeErrorWithAutoAuth(err, cfg);
+                }
+            },
+        },
+        {name: 'feishu_task_steps'},
+    );
 }
 
