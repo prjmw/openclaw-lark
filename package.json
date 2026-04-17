@@ -21,6 +21,7 @@
     "dist/",
     "skills/",
     "openclaw.plugin.json",
+    "openclaw.hooks",
     "README.md",
     "LICENSE"
   ],
@@ -75,6 +76,7 @@
     "extensions": [
       "./dist/index.mjs"
     ],
+    "hooks": "./openclaw.hooks",
     "channel": {
       "id": "openclaw-lark",
       "label": "Feishu",
