@@ -32,6 +32,7 @@ const FeishuTaskAgentSchema = Type.Union([
     }),
     Type.Object({
         action: Type.Literal('update_profile'),
+        profile_content: Type.String(),
     }),
     Type.Object({
         action: Type.Union([Type.Literal('list_registered'), Type.Literal('list_register')]),
@@ -41,7 +42,7 @@ const FeishuTaskAgentSchema = Type.Union([
 type FeishuTaskAgentParams =
     | { action: 'register' }
     | { action: 'unregister' }
-    | { action: 'update_profile' }
+    | { action: 'update_profile'; profile_content: string }
     | { action: 'list_registered' | 'list_register' };
 
 // ---------------------------------------------------------------------------
@@ -115,6 +116,9 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                         const res = await client.invokeByPath('feishu_task_agent.update_profile', resolved.path, {
                             method: 'POST',
                             as,
+                            data: {
+                                profile_content: p.profile_content,
+                            },
                             headers: {
                                 'x-tt-env': 'boe_task_agentqa'
                             },

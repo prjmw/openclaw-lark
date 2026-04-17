@@ -1,0 +1,5 @@
+- [x] 已明确 `update_profile` action 需要新增 `profile_content` 字段，类型为 `string`
+- [x] 已明确 schema 与 TypeScript 参数类型都需要同步扩展
+- [x] 已明确 `update_profile` 请求构造逻辑需要透传 `profile_content`
+- [x] 已明确其他 action 的行为保持不变
+- [x] 已包含最小验证要求，覆盖结构一致性与基础诊断检查
