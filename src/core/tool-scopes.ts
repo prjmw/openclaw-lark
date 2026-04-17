@@ -147,6 +147,7 @@ export type ToolActionKey =
   | 'feishu_task_tasklist.tasks'
   | 'feishu_task_agent.register'
   | 'feishu_task_agent.unregister'
+  | 'feishu_task_agent.update_profile'
   | 'feishu_task_agent.list_registered'
   | 'feishu_task_steps.append'
   | 'feishu_update_doc.default'
@@ -257,6 +258,7 @@ export const TOOL_SCOPES: ToolScopeMapping = {
   'feishu_task_subtask.list': ['task:task:read', 'task:task:write'],
   'feishu_task_agent.register': ['task:task:write'],
   'feishu_task_agent.unregister': ['task:task:write'],
+  'feishu_task_agent.update_profile': ['task:task:write'],
   'feishu_task_agent.list_registered': ['task:task:read', 'task:task:write'],
   'feishu_task_steps.append': ['task:task:write'],
   'feishu_chat.search': ['im:chat:read'],
