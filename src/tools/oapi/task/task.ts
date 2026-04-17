@@ -213,6 +213,21 @@ const FeishuTaskTaskSchema = Type.Union([
           "完成时间。支持三种格式：1) ISO 8601 / RFC 3339 格式（包含时区），例如 '2024-01-01T00:00:00+08:00'（设为已完成）；2) '0'（反完成，任务变为未完成）；3) 毫秒时间戳字符串。",
       }),
     ),
+    agent_task_progress: Type.Optional(
+      Type.Integer({
+        description: 'Agent 任务进度',
+      }),
+    ),
+    agent_task_status: Type.Optional(
+      Type.String({
+        description: 'Agent 任务状态',
+      }),
+    ),
+    text_deliveries: Type.Optional(
+      Type.Array(Type.String(), {
+        description: '文本交付列表',
+      }),
+    ),
     members: Type.Optional(
       Type.Array(
         Type.Object({
@@ -336,6 +351,9 @@ type FeishuTaskTaskParams =
         is_all_day?: boolean;
       };
       completed_at?: string;
+      agent_task_progress?: number;
+      agent_task_status?: string;
+      text_deliveries?: string[];
       members?: Array<{
         id: string;
         type?: 'user' | 'app';
@@ -588,11 +606,27 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                 }
               }
 
+              if (p.agent_task_progress !== undefined) {
+                updateData.agent_task_progress = p.agent_task_progress;
+              }
+              if (p.agent_task_status !== undefined) {
+                updateData.agent_task_status = p.agent_task_status;
+              }
+              if (p.text_deliveries !== undefined) {
+                updateData.text_deliveries = p.text_deliveries;
+              }
+
               if (p.members) updateData.members = p.members;
               if (p.repeat_rule) updateData.repeat_rule = p.repeat_rule;
 
               // Build update_fields list (required by Task API)
               const updateFields = Object.keys(updateData);
+              if (updateFields.length === 0) {
+                return json({
+                  error:
+                    'patch 至少需要提供一个可更新字段：summary、description、due、start、completed_at、agent_task_progress、agent_task_status、text_deliveries、members、repeat_rule',
+                });
+              }
 
               const authType = p.auth_type || 'user';
               const res = await client.invoke(
