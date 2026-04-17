@@ -157,6 +157,11 @@ const FeishuTaskTaskSchema = Type.Union([
         description: '是否筛选已完成任务',
       }),
     ),
+    agent_task_status: Type.Optional(
+      Type.Integer({
+        description: 'Agent 任务状态',
+      }),
+    ),
     auth_type: Type.Optional(
       StringEnum(['tenant', 'user'], {
         description: '授权类型，默认 user。',
@@ -214,12 +219,12 @@ const FeishuTaskTaskSchema = Type.Union([
       }),
     ),
     agent_task_progress: Type.Optional(
-      Type.Integer({
+      Type.String({
         description: 'Agent 任务进度',
       }),
     ),
     agent_task_status: Type.Optional(
-      Type.String({
+      Type.Integer({
         description: 'Agent 任务状态',
       }),
     ),
@@ -334,6 +339,7 @@ type FeishuTaskTaskParams =
       page_size?: number;
       page_token?: string;
       completed?: boolean;
+      agent_task_status?: number;
       auth_type?: 'tenant' | 'user';
       user_id_type?: 'open_id' | 'union_id' | 'user_id';
     }
@@ -351,8 +357,8 @@ type FeishuTaskTaskParams =
         is_all_day?: boolean;
       };
       completed_at?: string;
-      agent_task_progress?: number;
-      agent_task_status?: string;
+      agent_task_progress?: string;
+      agent_task_status?: number;
       text_deliveries?: string[];
       members?: Array<{
         id: string;
@@ -520,6 +526,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                         page_size: p.page_size,
                         page_token: p.page_token,
                         completed: p.completed,
+                        agent_task_status: p.agent_task_status,
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                     },
