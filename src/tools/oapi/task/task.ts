@@ -497,19 +497,22 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
               const authType = p.auth_type || 'user';
               const res = await client.invoke(
                 'feishu_task_task.create',
-                (sdk, opts) =>
-                  sdk.task.v2.task.create(
+                (sdk, opt) => {
+                  const modifiedOpt = opt || {};
+                  modifiedOpt.headers = {
+                    ...(modifiedOpt.headers || {}),
+                    'x-tt-env': 'boe_task_agentqa',
+                  };
+                  return sdk.task.v2.task.create(
                     {
                       data: taskData,
-                      headers: {
-                         'x-tt-env': 'boe_task_agentqa'
-                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                     },
-                    opts,
-                  ),
+                    modifiedOpt
+                  );
+                },
                 { as: authType },
               );
               assertLarkOk(res);
@@ -531,19 +534,22 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
               const authType = p.auth_type || 'user';
               const res = await client.invoke(
                 'feishu_task_task.get',
-                (sdk, opts) =>
-                  sdk.task.v2.task.get(
+                (sdk, opt) => {
+                  const modifiedOpt = opt || {};
+                  modifiedOpt.headers = {
+                    ...(modifiedOpt.headers || {}),
+                    'x-tt-env': 'boe_task_agentqa',
+                  };
+                  return sdk.task.v2.task.get(
                     {
                       path: { task_guid: p.task_guid },
-                      headers: {
-                         'x-tt-env': 'boe_task_agentqa'
-                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                     },
-                    opts,
+                    modifiedOpt,
                   ),
+                },
                 { as: authType },
               );
               assertLarkOk(res);
@@ -564,8 +570,13 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
               const authType = p.auth_type || 'user';
               const res = await client.invoke(
                 'feishu_task_task.list',
-                (sdk, opts) =>
-                  sdk.task.v2.task.list(
+                (sdk, opts) => {
+                  const modifiedOpt = opts || {};
+                  modifiedOpt.headers = {
+                    ...(modifiedOpt.headers || {}),
+                    'x-tt-env': 'boe_task_agentqa',
+                  };
+                  return sdk.task.v2.task.list(
                     {
                       params: {
                         page_size: p.page_size,
@@ -573,13 +584,11 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                         completed: p.completed,
                         agent_task_status: p.agent_task_status,
                         user_id_type: (p.user_id_type || 'open_id') as any,
-                      },
-                      headers: {
-                        'x-tt-env': 'boe_task_agentqa'
-                      },
+                      }
                     },
-                    opts,
-                  ),
+                    modifiedOpt,
+                  );
+                },
                 { as: authType },
               );
               assertLarkOk(res);
@@ -686,23 +695,26 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
               const authType = p.auth_type || 'user';
               const res = await client.invoke(
                 'feishu_task_task.patch',
-                (sdk, opts) =>
-                  sdk.task.v2.task.patch(
+                (sdk, opts) => {
+                  const modifiedOpt = opts || {};
+                  modifiedOpt.headers = {
+                    ...(modifiedOpt.headers || {}),
+                    'x-tt-env': 'boe_task_agentqa',
+                  };
+                  return sdk.task.v2.task.patch(
                     {
                       path: { task_guid: p.task_guid },
                       data: {
                         task: updateData,
                         update_fields: updateFields,
                       },
-                      headers: {
-                        'x-tt-env': 'boe_task_agentqa'
-                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                     },
-                    opts,
-                  ),
+                    modifiedOpt,
+                  );
+                },
                 { as: authType },
               );
               assertLarkOk(res);
@@ -745,9 +757,6 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                     {
                       path: {
                         task_guid: p.task_guid,
-                      },
-                      headers: {
-                        'x-tt-env': 'boe_task_agentqa'
                       },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,

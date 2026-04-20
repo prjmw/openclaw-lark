@@ -116,7 +116,7 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                         const res = await client.invokeByPath('feishu_task_agent.update_profile', resolved.path, {
                             method: 'POST',
                             as,
-                            data: {
+                            body: {
                                 profile_content: p.profile_content,
                             },
                             headers: {
