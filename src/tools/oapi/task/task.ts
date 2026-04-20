@@ -503,6 +503,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                     ...(modifiedOpt.headers || {}),
                     'x-tt-env': 'boe_task_agentqa',
                   };
+                  log.error(`feishu_task_task create: opt=${JSON.stringify(modifiedOpt)}`);
                   return sdk.task.v2.task.create(
                     {
                       data: taskData,
@@ -701,6 +702,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                     ...(modifiedOpt.headers || {}),
                     'x-tt-env': 'boe_task_agentqa',
                   };
+                  log.error(`feishu_task_task patch: opt=${JSON.stringify(modifiedOpt)}`);
                   return sdk.task.v2.task.patch(
                     {
                       path: { task_guid: p.task_guid },
