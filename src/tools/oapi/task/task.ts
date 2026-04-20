@@ -679,12 +679,6 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
 
               // Build update_fields list (required by Task API)
               const updateFields = Object.keys(updateData);
-              if (updateFields.length === 0) {
-                return json({
-                  error:
-                    'patch 至少需要提供一个可更新字段：summary、description、due、start、completed_at、agent_task_progress、agent_task_status、text_deliveries、members、repeat_rule',
-                });
-              }
 
               const authType = p.auth_type || 'user';
               const res = await client.invoke(
