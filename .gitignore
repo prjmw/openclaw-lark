@@ -2,7 +2,7 @@ node_modules/
 .DS_Store
 
 # feishu plugin build artifacts
-dist/
+# dist/
 release/
 src/tools/docs/
 

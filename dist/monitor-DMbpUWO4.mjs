@@ -5150,7 +5150,6 @@ var ToolClient = class {
 		if (feishuEntry && feishuEntry.enabled !== false) throw new Error("❌ 检测到旧版插件未禁用。\n👉 请依次运行命令：\n```\nopenclaw config set plugins.entries.feishu.enabled false --json\nopenclaw gateway restart\n```");
 		const requiredScopes = getRequiredScopes(toolAction);
 		const tokenType = options?.as ?? "user";
-		tcLog.error(`lxr lxr lxr tokenType ${tokenType} ${JSON.stringify(options)}`);
 		const appCheckScopes = tokenType === "user" ? [...new Set([...requiredScopes, "offline_access"])] : requiredScopes;
 		let appScopeVerified = true;
 		if (appCheckScopes.length > 0) {
@@ -5164,6 +5163,7 @@ var ToolClient = class {
 				}, "all", tokenType, requiredScopes);
 			} else appScopeVerified = false;
 		}
+		tcLog.info(`todo client _invokeInternal toolAction ${toolAction} tokenType ${tokenType} options ${JSON.stringify(options)}`);
 		if (tokenType === "tenant") return this.invokeAsTenant(toolAction, fn, requiredScopes);
 		let userOpenId = options?.userOpenId ?? this.senderOpenId;
 		if (!userOpenId) {
@@ -5210,7 +5210,6 @@ var ToolClient = class {
 	*/
 	async invokeByPath(toolAction, path, options) {
 		const fn = async (_sdk, _opts, uat) => {
-			tcLog.error(`lxr lxr lxr invokeByPath ${toolAction} ${path} ${JSON.stringify(options)}`);
 			return this.rawRequest(path, {
 				method: options?.method,
 				body: options?.body,

@@ -199,8 +199,6 @@ export class ToolClient {
     // 3. 决定 token 类型（默认 user，用户可通过 options.as 覆盖）
     const tokenType = options?.as ?? 'user';
 
-    tcLog.error(`lxr lxr lxr tokenType ${tokenType} ${JSON.stringify(options)}`);
-
     // ---- App Granted Scopes 检查（应用已开通的权限）----
     // UAT 调用额外检查 offline_access（OAuth Device Flow 的前提权限），
     // 但不加入 requiredScopes（避免阻断业务 scope 进入用户授权流程）。
@@ -227,6 +225,8 @@ export class ToolClient {
         appScopeVerified = false;
       }
     }
+
+    tcLog.info(`todo client _invokeInternal toolAction ${toolAction} tokenType ${tokenType} options ${JSON.stringify(options) }`);
 
     // 5. 执行调用
     if (tokenType === 'tenant') {
@@ -288,7 +288,6 @@ export class ToolClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async invokeByPath<T = any>(toolAction: ToolActionKey, path: string, options?: InvokeByPathOptions): Promise<T> {
     const fn: InvokeFn<T> = async (_sdk, _opts, uat) => {
-      tcLog.error(`lxr lxr lxr invokeByPath ${toolAction} ${path} ${JSON.stringify(options)}`);
       return this.rawRequest<T>(path, {
         method: options?.method,
         body: options?.body,
