@@ -1,0 +1,5 @@
+- [x] 已明确 `withTaskEnvHeader()` 的修复目标是保留原始 SDK request options 对象
+- [x] 已覆盖 `task.ts` 与 `tasklist.ts` 两个存在相同 helper 模式的文件
+- [x] 已明确 `opts` 为空时仍需支持 tenant 场景注入 `x-tt-env`
+- [x] 已明确 `invokeByPath(...)` 场景保持现状不变
+- [x] 已包含最小验证要求，覆盖代码检查与基础诊断

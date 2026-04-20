@@ -26,13 +26,19 @@ import type { PaginatedData } from '../sdk-types';
 const TASK_ENV_HEADER = 'boe_task_agentqa';
 
 function withTaskEnvHeader(opts?: any): any {
-  return {
-    ...(opts ?? {}),
-    headers: {
-      ...(opts?.headers ?? {}),
-      'x-tt-env': TASK_ENV_HEADER,
-    },
+  if (!opts) {
+    return {
+      headers: {
+        'x-tt-env': TASK_ENV_HEADER,
+      },
+    };
+  }
+
+  opts.headers = {
+    ...(opts.headers ?? {}),
+    'x-tt-env': TASK_ENV_HEADER,
   };
+  return opts;
 }
 
 // ---------------------------------------------------------------------------
