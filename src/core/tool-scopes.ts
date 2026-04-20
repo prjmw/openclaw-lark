@@ -124,6 +124,7 @@ export type ToolActionKey =
   | 'feishu_im_user_search_messages.default'
   | 'feishu_search_doc_wiki.search'
   | 'feishu_search_user.default'
+  | 'feishu_task_attachment.upload'
   | 'feishu_task_comment.create'
   | 'feishu_task_comment.get'
   | 'feishu_task_comment.list'
@@ -235,6 +236,7 @@ export const TOOL_SCOPES: ToolScopeMapping = {
   'feishu_calendar_event_attendee.create': ['calendar:calendar.event:update'],
   'feishu_calendar_event_attendee.list': ['calendar:calendar.event:read'],
   'feishu_calendar_freebusy.list': ['calendar:calendar.free_busy:read'],
+  'feishu_task_attachment.upload': ['task:task:write', 'task:task:writeonly'],
   'feishu_task_task.create': ['task:task:write', 'task:task:writeonly'],
   'feishu_task_task.get': ['task:task:read', 'task:task:write'],
   'feishu_task_task.list': ['task:task:read', 'task:task:write'],

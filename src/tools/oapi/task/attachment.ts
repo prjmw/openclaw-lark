@@ -32,11 +32,9 @@ type FeishuTaskAttachmentParams = { action: 'upload' };
 
 function resolvePathForAction(action: FeishuTaskAttachmentParams['action']): { path: string; env: string[] } {
   if (action === 'upload') {
-    // TODO: replace with real attachment API path after params are finalized
-    return { path: '/open-apis/task/v2/attachment/upload', env: [] };
+    return { path: '/open-apis/task/v2/attachments/upload', env: [] };
   }
-
-  return { path: '/open-apis/task/v2/attachment/upload', env: [] };
+  return { path: '/open-apis/task/v2/attachments/upload', env: [] };
 }
 
 // ---------------------------------------------------------------------------
