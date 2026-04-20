@@ -501,6 +501,9 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   sdk.task.v2.task.create(
                     {
                       data: taskData,
+                      headers: {
+                         'x-tt-env': 'boe_task_agentqa'
+                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
@@ -532,6 +535,9 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   sdk.task.v2.task.get(
                     {
                       path: { task_guid: p.task_guid },
+                      headers: {
+                         'x-tt-env': 'boe_task_agentqa'
+                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
@@ -567,6 +573,9 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                         completed: p.completed,
                         agent_task_status: p.agent_task_status,
                         user_id_type: (p.user_id_type || 'open_id') as any,
+                      },
+                      headers: {
+                        'x-tt-env': 'boe_task_agentqa'
                       },
                     },
                     opts,
@@ -685,6 +694,9 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                         task: updateData,
                         update_fields: updateFields,
                       },
+                      headers: {
+                        'x-tt-env': 'boe_task_agentqa'
+                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
@@ -733,6 +745,9 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                     {
                       path: {
                         task_guid: p.task_guid,
+                      },
+                      headers: {
+                        'x-tt-env': 'boe_task_agentqa'
                       },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,

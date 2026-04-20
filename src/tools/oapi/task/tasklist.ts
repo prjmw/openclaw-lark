@@ -265,6 +265,9 @@ export function registerFeishuTaskTasklistTool(api: OpenClawPluginApi): void {
                         page_token: p.page_token,
                         user_id_type: 'open_id' as any,
                       },
+                      headers: {
+                        'x-tt-env': 'boe_task_agentqa'
+                      },
                     },
                     opts,
                   ),
