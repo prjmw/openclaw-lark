@@ -550,7 +550,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                       },
                     },
                     modifiedOpt,
-                  ),
+                  );
                 },
                 { as: authType },
               );
