@@ -5,7 +5,7 @@
  * feishu_task_task tool -- Manage Feishu tasks.
  *
  * P0 Actions: create, get, list, patch
- * P1 Actions: add_members
+ * P1 Actions: add_members, append_steps
  *
  * Uses the Feishu Task v2 API:
  *   - create: POST /open-apis/task/v2/tasks
@@ -13,6 +13,7 @@
  *   - list:   GET  /open-apis/task/v2/tasks
  *   - patch:  PATCH /open-apis/task/v2/tasks/:task_guid
  *   - add_members: POST /open-apis/task/v2/tasks/:task_guid/add_members
+ *   - append_steps: POST /open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -295,6 +296,34 @@ const FeishuTaskTaskSchema = Type.Union([
       StringEnum(['open_id', 'union_id', 'user_id']),
     ),
   }),
+
+  // APPEND_STEPS
+  Type.Object({
+    action: Type.Literal('append_steps'),
+    task_guid: Type.String({
+      description: '任务 GUID',
+    }),
+    idempotent_key: Type.String({
+      description: '幂等键',
+    }),
+    task_steps: Type.Array(
+      Type.Object({
+        quote: Type.String({
+          description: '步骤引用信息',
+        }),
+        content: Type.String({
+          description: '步骤内容',
+        }),
+        timestamp: Type.Integer({
+          description: '步骤时间戳',
+        }),
+      }),
+      {
+        description: '要追加的任务步骤列表',
+        minItems: 1,
+      },
+    ),
+  }),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -380,6 +409,16 @@ type FeishuTaskTaskParams =
       client_token?: string;
       auth_type?: 'tenant' | 'user';
       user_id_type?: 'open_id' | 'union_id' | 'user_id';
+    }
+  | {
+      action: 'append_steps';
+      task_guid: string;
+      idempotent_key: string;
+      task_steps: Array<{
+        quote: string;
+        content: string;
+        timestamp: number;
+      }>;
     };
 
 // ---------------------------------------------------------------------------
@@ -398,7 +437,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
       name: 'feishu_task_task',
       label: 'Feishu Task Management',
       description:
-        "【以用户或应用身份】飞书任务管理工具。用于创建、查询、更新任务。Actions: create（创建任务）, get（获取任务详情）, list（查询任务列表，仅返回我负责的任务）, patch（更新任务）, add_members（添加任务成员）。时间参数使用ISO 8601 / RFC 3339 格式（包含时区），例如 '2024-01-01T00:00:00+08:00'。支持通过 auth_type 参数切换用户(user)或应用(tenant)身份。",
+        "【以用户或应用身份】飞书任务管理工具。用于创建、查询、更新任务。Actions: create（创建任务）, get（获取任务详情）, list（查询任务列表，仅返回我负责的任务）, patch（更新任务）, add_members（添加任务成员）, append_steps（追加任务步骤记录）。时间参数使用ISO 8601 / RFC 3339 格式（包含时区），例如 '2024-01-01T00:00:00+08:00'。支持通过 auth_type 参数切换用户(user)或应用(tenant)身份；append_steps 固定使用应用身份。",
       parameters: FeishuTaskTaskSchema,
       async execute(_toolCallId: string, params: unknown) {
         const p = params as FeishuTaskTaskParams;
@@ -711,6 +750,37 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
               return json({
                 task: res.data?.task,
               });
+            }
+
+            // -----------------------------------------------------------------
+            // APPEND TASK STEPS
+            // -----------------------------------------------------------------
+            case 'append_steps': {
+              if (!p.task_steps.length) {
+                return json({
+                  error: 'task_steps is required and cannot be empty',
+                });
+              }
+
+              log.info(`append_steps: task_guid=${p.task_guid}, steps_count=${p.task_steps.length}, as=tenant`);
+
+              const res = await client.invokeByPath(
+                'feishu_task_task.append_steps',
+                '/open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2',
+                {
+                  method: 'POST',
+                  as: 'tenant',
+                  body: {
+                    task_guid: p.task_guid,
+                    idempotent_key: p.idempotent_key,
+                    task_steps: p.task_steps,
+                  },
+                  headers: {
+                    'x-tt-env': 'boe_task_agentqa',
+                  },
+                },
+              );
+              return json(res);
             }
           }
         } catch (err) {

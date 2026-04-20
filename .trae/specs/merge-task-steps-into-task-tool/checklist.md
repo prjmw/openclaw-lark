@@ -1,0 +1,5 @@
+- [x] 已明确 `task_steps.append` 能力需要迁移到 `task.ts` 的新 action
+- [x] 已明确新 action 需要继承原 `append` 的路径、授权方式、请求体结构和非空约束
+- [x] 已明确需要删除 `src/tools/oapi/task/task_steps.ts`
+- [x] 已明确需要从 `src/tools/oapi/task/index.ts` 移除 `task_steps` 导出
+- [x] 已包含最小验证要求，覆盖迁移后新 action、一致性检查和旧文件移除
