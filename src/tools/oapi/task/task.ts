@@ -30,6 +30,18 @@ import {
 } from '../helpers';
 import type { PaginatedData, TaskCreateData } from '../sdk-types';
 
+const TASK_ENV_HEADER = 'boe_task_agentqa';
+
+function withTaskEnvHeader(opts?: any): any {
+  return {
+    ...(opts ?? {}),
+    headers: {
+      ...(opts?.headers ?? {}),
+      'x-tt-env': TASK_ENV_HEADER,
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
@@ -501,14 +513,11 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   sdk.task.v2.task.create(
                     {
                       data: taskData,
-                      headers: {
-                         'x-tt-env': 'boe_task_agentqa'
-                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                     },
-                    opts,
+                    withTaskEnvHeader(opts),
                   ),
                 { as: authType },
               );
@@ -535,14 +544,11 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   sdk.task.v2.task.get(
                     {
                       path: { task_guid: p.task_guid },
-                      headers: {
-                         'x-tt-env': 'boe_task_agentqa'
-                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                     },
-                    opts,
+                    withTaskEnvHeader(opts),
                   ),
                 { as: authType },
               );
@@ -574,11 +580,8 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                         agent_task_status: p.agent_task_status,
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
-                      headers: {
-                        'x-tt-env': 'boe_task_agentqa'
-                      },
                     },
-                    opts,
+                    withTaskEnvHeader(opts),
                   ),
                 { as: authType },
               );
@@ -694,14 +697,11 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                         task: updateData,
                         update_fields: updateFields,
                       },
-                      headers: {
-                        'x-tt-env': 'boe_task_agentqa'
-                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                     },
-                    opts,
+                    withTaskEnvHeader(opts),
                   ),
                 { as: authType },
               );
@@ -746,15 +746,12 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                       path: {
                         task_guid: p.task_guid,
                       },
-                      headers: {
-                        'x-tt-env': 'boe_task_agentqa'
-                      },
                       params: {
                         user_id_type: (p.user_id_type || 'open_id') as any,
                       },
                       data: requestData,
                     },
-                    opts,
+                    withTaskEnvHeader(opts),
                   ),
                 { as: authType },
               );
@@ -791,7 +788,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                     task_steps: p.task_steps,
                   },
                   headers: {
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': TASK_ENV_HEADER,
                   },
                 },
               );

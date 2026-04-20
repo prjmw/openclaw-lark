@@ -23,6 +23,18 @@ import { Type } from '@sinclair/typebox';
 import { StringEnum, assertLarkOk, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
 import type { PaginatedData } from '../sdk-types';
 
+const TASK_ENV_HEADER = 'boe_task_agentqa';
+
+function withTaskEnvHeader(opts?: any): any {
+  return {
+    ...(opts ?? {}),
+    headers: {
+      ...(opts?.headers ?? {}),
+      'x-tt-env': TASK_ENV_HEADER,
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
@@ -265,11 +277,8 @@ export function registerFeishuTaskTasklistTool(api: OpenClawPluginApi): void {
                         page_token: p.page_token,
                         user_id_type: 'open_id' as any,
                       },
-                      headers: {
-                        'x-tt-env': 'boe_task_agentqa'
-                      },
                     },
-                    opts,
+                    withTaskEnvHeader(opts),
                   ),
                 { as: p.auth_type || 'user' },
               );
