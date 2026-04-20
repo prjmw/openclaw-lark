@@ -17,13 +17,13 @@ import {
   registerFeishuCalendarFreebusyTool,
 } from './calendar/index';
 import {
+  registerFeishuTaskAttachmentTool,
   registerFeishuTaskCommentTool,
   registerFeishuTaskSectionTool,
   registerFeishuTaskSubtaskTool,
   registerFeishuTaskTaskTool,
   registerFeishuTaskTasklistTool,
   registerFeishuTaskAgentTool,
-  registerFeishuTaskUploadattachmentTool,
 } from './task/index';
 import {
   registerFeishuBitableAppTableFieldTool,
@@ -63,11 +63,11 @@ export function registerOapiTools(api: OpenClawPluginApi): void {
   // Task tools
   registerFeishuTaskTaskTool(api);
   registerFeishuTaskTasklistTool(api);
+  registerFeishuTaskAttachmentTool(api);
   registerFeishuTaskSectionTool(api);
   registerFeishuTaskCommentTool(api);
   registerFeishuTaskSubtaskTool(api);
   registerFeishuTaskAgentTool(api);
-  registerFeishuTaskUploadattachmentTool(api);
 
   // Bitable tools
   registerFeishuBitableAppTool(api);

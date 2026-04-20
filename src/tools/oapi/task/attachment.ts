@@ -2,7 +2,7 @@
  * Copyright (c) 2026 ByteDance Ltd. and/or its affiliates
  * SPDX-License-Identifier: MIT
  *
- * feishu_task_uploadattachment tool -- Upload task attachment.
+ * feishu_task_attachment tool -- Manage task attachments.
  *
  * Actions:
  * - upload: Upload task attachment (tenant identity)
@@ -18,21 +18,21 @@ import { createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } 
 // Schema
 // ---------------------------------------------------------------------------
 
-const FeishuTaskUploadattachmentSchema = Type.Union([
+const FeishuTaskAttachmentSchema = Type.Union([
   Type.Object({
     action: Type.Literal('upload'),
   }),
 ]);
 
-type FeishuTaskUploadattachmentParams = { action: 'upload' };
+type FeishuTaskAttachmentParams = { action: 'upload' };
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function resolvePathForAction(action: FeishuTaskUploadattachmentParams['action']): { path: string; env: string[] } {
+function resolvePathForAction(action: FeishuTaskAttachmentParams['action']): { path: string; env: string[] } {
   if (action === 'upload') {
-    // TODO: replace with real upload attachment API path after params are finalized
+    // TODO: replace with real attachment API path after params are finalized
     return { path: '/open-apis/task/v2/attachment/upload', env: [] };
   }
 
@@ -43,21 +43,21 @@ function resolvePathForAction(action: FeishuTaskUploadattachmentParams['action']
 // Registration
 // ---------------------------------------------------------------------------
 
-export function registerFeishuTaskUploadattachmentTool(api: OpenClawPluginApi): void {
+export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
   if (!api.config) return;
   const cfg = api.config;
 
-  const { toolClient, log } = createToolContext(api, 'feishu_task_uploadattachment');
+  const { toolClient, log } = createToolContext(api, 'feishu_task_attachment');
 
   registerTool(
     api,
     {
-      name: 'feishu_task_uploadattachment',
-      label: 'Feishu Task Upload Attachment',
-      description: '飞书任务附件上传工具（初版骨架）。当前仅提供最小 upload action，后续可补充真实上传参数。',
-      parameters: FeishuTaskUploadattachmentSchema,
+      name: 'feishu_task_attachment',
+      label: 'Feishu Task Attachment',
+      description: '飞书任务附件工具（初版骨架）。当前仅提供最小 upload action，后续可补充真实上传参数。',
+      parameters: FeishuTaskAttachmentSchema,
       async execute(_toolCallId: string, params: unknown) {
-        const p = params as FeishuTaskUploadattachmentParams;
+        const p = params as FeishuTaskAttachmentParams;
         try {
           const resolved = resolvePathForAction(p.action);
           const client = toolClient();
@@ -65,7 +65,7 @@ export function registerFeishuTaskUploadattachmentTool(api: OpenClawPluginApi): 
           const as = 'tenant';
           log.info(`${p.action}: path=${resolved.path}, as=${as}`);
 
-          const res = await client.invokeByPath('feishu_task_uploadattachment.upload', resolved.path, {
+          const res = await client.invokeByPath('feishu_task_attachment.upload', resolved.path, {
             method: 'POST',
             as,
             headers: {
@@ -78,6 +78,6 @@ export function registerFeishuTaskUploadattachmentTool(api: OpenClawPluginApi): 
         }
       },
     },
-    { name: 'feishu_task_uploadattachment' },
+    { name: 'feishu_task_attachment' },
   );
 }
