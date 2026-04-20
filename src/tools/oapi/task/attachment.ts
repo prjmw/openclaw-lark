@@ -12,7 +12,7 @@
 import type { OpenClawPluginApi } from 'openclaw/plugin-sdk';
 import { Type } from '@sinclair/typebox';
 
-import { createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
+import { StringEnum, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -21,10 +21,31 @@ import { createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } 
 const FeishuTaskAttachmentSchema = Type.Union([
   Type.Object({
     action: Type.Literal('upload'),
+    resource_type: Type.Optional(
+      StringEnum(['task', 'delivery_task'], {
+        description: '资源类型，可选值：task、delivery_task。默认 task。',
+        default: 'task',
+      }),
+    ),
+    resource_id: Type.String({
+      description: '资源 ID。',
+    }),
+    file: Type.String({
+      description: '文件内容或文件 token 占位字符串。',
+    }),
   }),
 ]);
 
-type FeishuTaskAttachmentParams = { action: 'upload' };
+type FeishuTaskAttachmentParams = {
+  action: 'upload';
+  resource_type?: 'task' | 'delivery_task';
+  resource_id: string;
+  file: string;
+};
+
+type MultipartFormData = {
+  append(name: string, value: string): void;
+};
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -52,7 +73,7 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
     {
       name: 'feishu_task_attachment',
       label: 'Feishu Task Attachment',
-      description: '飞书任务附件工具（初版骨架）。当前仅提供最小 upload action，后续可补充真实上传参数。',
+      description: '飞书任务附件工具。当前提供 upload action，用于上传任务附件。',
       parameters: FeishuTaskAttachmentSchema,
       async execute(_toolCallId: string, params: unknown) {
         const p = params as FeishuTaskAttachmentParams;
@@ -60,12 +81,20 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           const resolved = resolvePathForAction(p.action);
           const client = toolClient();
 
+          const resourceType = p.resource_type ?? 'task';
+          const FormDataCtor = (globalThis as typeof globalThis & { FormData: new () => MultipartFormData }).FormData;
+          const formData = new FormDataCtor();
+          formData.append('resource_type', resourceType);
+          formData.append('resource_id', p.resource_id);
+          formData.append('file', p.file);
+
           const as = 'tenant';
           log.info(`${p.action}: path=${resolved.path}, as=${as}`);
 
           const res = await client.invokeByPath('feishu_task_attachment.upload', resolved.path, {
             method: 'POST',
             as,
+            body: formData,
             headers: {
               'x-tt-env': 'boe_task_agentqa',
             },

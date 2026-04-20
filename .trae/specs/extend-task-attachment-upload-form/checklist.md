@@ -1,0 +1,6 @@
+- [x] 已明确 `upload` action 需要新增 `resource_type`、`resource_id`、`file` 3 个字段
+- [x] 已明确 `resource_type` 为字符串枚举，支持 `task` / `delivery_task`，默认值为 `task`
+- [x] 已明确 `resource_id` 表示附件归属资源 ID
+- [x] 已明确 `file` 需要以表单字段方式上传
+- [x] 已明确 `upload` 请求体采用 `multipart/form-data`
+- [x] 已包含最小验证要求，覆盖入参一致性、表单字段和基础诊断检查
