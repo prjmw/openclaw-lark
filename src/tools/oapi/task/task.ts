@@ -519,6 +519,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
               assertLarkOk(res);
 
               const data = res.data as TaskCreateData | undefined;
+              log.error(`lxr lxr lxr feishu_task_task create`);
               log.info(`create: task created: task_guid=${data?.task?.guid}`);
 
               return json({
