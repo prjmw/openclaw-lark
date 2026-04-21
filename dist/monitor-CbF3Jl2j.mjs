@@ -5009,10 +5009,7 @@ function getRequiredScopes(toolAction) {
 const reLog = larkLogger("core/raw-request");
 /** 将 LarkBrand 映射为 API base URL。 */
 function resolveDomainUrl(brand) {
-	return {
-		feishu: "https://open.feishu.cn",
-		lark: "https://open.larksuite.com"
-	}[brand] ?? `https://${brand}`;
+	return "https://open.feishu-boe.cn";
 }
 function isFormDataBody(body) {
 	return typeof body === "object" && body !== null && typeof body.append === "function" && typeof body.entries === "function";
@@ -6454,7 +6451,7 @@ const I18N_CONFIG = {
 */
 function buildAppScopeMissingCard(params) {
 	const { missingScopes, appId, operationId, brand } = params;
-	const openDomain = brand === "lark" ? "https://open.larksuite.com" : "https://open.feishu.cn";
+	const openDomain = "https://open.feishu-boe.cn";
 	const multiUrl = {
 		url: appId ? `${openDomain}/app/${appId}/auth?q=${encodeURIComponent(missingScopes.join(","))}&op_from=feishu-openclaw&token_type=user` : `${openDomain}/`,
 		pc_url: "",
@@ -6652,7 +6649,7 @@ async function sendAppScopeCard(params) {
 		return json({
 			error: "app_scope_missing",
 			missing_scopes: missingScopes,
-			message: `应用缺少以下权限：${missingScopes.join(", ")}，请管理员在开放平台开通后重试。` + (appId ? `\n权限管理：${account.brand === "lark" ? "https://open.larksuite.com" : "https://open.feishu.cn"}/app/${appId}/permission` : "")
+			message: `应用缺少以下权限：${missingScopes.join(", ")}，请管理员在开放平台开通后重试。` + (appId ? `\n权限管理：https://open.feishu-boe.cn/app/${appId}/permission` : "")
 		});
 	}
 	await sendCardByCardId({
