@@ -29,6 +29,7 @@ import {
   registerTool,
 } from '../helpers';
 import type { PaginatedData, TaskCreateData } from '../sdk-types';
+import { rawLarkRequest } from '../../../core/raw-request';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -332,94 +333,94 @@ const FeishuTaskTaskSchema = Type.Union([
 
 type FeishuTaskTaskParams =
   | {
-      action: 'create';
-      summary: string;
-      current_user_id?: string;
-      description?: string;
-      due?: {
-        timestamp: string;
-        is_all_day?: boolean;
-      };
-      start?: {
-        timestamp: string;
-        is_all_day?: boolean;
-      };
-      members?: Array<{
-        id: string;
-        type?: 'user' | 'app';
-        role?: 'assignee' | 'follower';
-      }>;
-      repeat_rule?: string;
-      tasklists?: Array<{
-        tasklist_guid: string;
-        section_guid?: string;
-      }>;
-      auth_type?: 'tenant' | 'user';
-      user_id_type?: 'open_id' | 'union_id' | 'user_id';
-    }
-  | {
-      action: 'get';
-      task_guid: string;
-      auth_type?: 'tenant' | 'user';
-      user_id_type?: 'open_id' | 'union_id' | 'user_id';
-    }
-  | {
-      action: 'list';
-      page_size?: number;
-      page_token?: string;
-      completed?: boolean;
-      agent_task_status?: number;
-      auth_type?: 'tenant' | 'user';
-      user_id_type?: 'open_id' | 'union_id' | 'user_id';
-    }
-  | {
-      action: 'patch';
-      task_guid: string;
-      summary?: string;
-      description?: string;
-      due?: {
-        timestamp: string;
-        is_all_day?: boolean;
-      };
-      start?: {
-        timestamp: string;
-        is_all_day?: boolean;
-      };
-      completed_at?: string;
-      agent_task_progress?: string;
-      agent_task_status?: number;
-      text_deliveries?: string[];
-      members?: Array<{
-        id: string;
-        type?: 'user' | 'app';
-        role?: 'assignee' | 'follower';
-      }>;
-      repeat_rule?: string;
-      auth_type?: 'tenant' | 'user';
-      user_id_type?: 'open_id' | 'union_id' | 'user_id';
-    }
-  | {
-      action: 'add_members';
-      task_guid: string;
-      members: Array<{
-        id: string;
-        type?: 'user' | 'app';
-        role?: 'assignee' | 'follower';
-      }>;
-      client_token?: string;
-      auth_type?: 'tenant' | 'user';
-      user_id_type?: 'open_id' | 'union_id' | 'user_id';
-    }
-  | {
-      action: 'append_steps';
-      task_guid: string;
-      idempotent_key: string;
-      task_steps: Array<{
-        quote: string;
-        content: string;
-        timestamp: number;
-      }>;
+    action: 'create';
+    summary: string;
+    current_user_id?: string;
+    description?: string;
+    due?: {
+      timestamp: string;
+      is_all_day?: boolean;
     };
+    start?: {
+      timestamp: string;
+      is_all_day?: boolean;
+    };
+    members?: Array<{
+      id: string;
+      type?: 'user' | 'app';
+      role?: 'assignee' | 'follower';
+    }>;
+    repeat_rule?: string;
+    tasklists?: Array<{
+      tasklist_guid: string;
+      section_guid?: string;
+    }>;
+    auth_type?: 'tenant' | 'user';
+    user_id_type?: 'open_id' | 'union_id' | 'user_id';
+  }
+  | {
+    action: 'get';
+    task_guid: string;
+    auth_type?: 'tenant' | 'user';
+    user_id_type?: 'open_id' | 'union_id' | 'user_id';
+  }
+  | {
+    action: 'list';
+    page_size?: number;
+    page_token?: string;
+    completed?: boolean;
+    agent_task_status?: number;
+    auth_type?: 'tenant' | 'user';
+    user_id_type?: 'open_id' | 'union_id' | 'user_id';
+  }
+  | {
+    action: 'patch';
+    task_guid: string;
+    summary?: string;
+    description?: string;
+    due?: {
+      timestamp: string;
+      is_all_day?: boolean;
+    };
+    start?: {
+      timestamp: string;
+      is_all_day?: boolean;
+    };
+    completed_at?: string;
+    agent_task_progress?: string;
+    agent_task_status?: number;
+    text_deliveries?: string[];
+    members?: Array<{
+      id: string;
+      type?: 'user' | 'app';
+      role?: 'assignee' | 'follower';
+    }>;
+    repeat_rule?: string;
+    auth_type?: 'tenant' | 'user';
+    user_id_type?: 'open_id' | 'union_id' | 'user_id';
+  }
+  | {
+    action: 'add_members';
+    task_guid: string;
+    members: Array<{
+      id: string;
+      type?: 'user' | 'app';
+      role?: 'assignee' | 'follower';
+    }>;
+    client_token?: string;
+    auth_type?: 'tenant' | 'user';
+    user_id_type?: 'open_id' | 'union_id' | 'user_id';
+  }
+  | {
+    action: 'append_steps';
+    task_guid: string;
+    idempotent_key: string;
+    task_steps: Array<{
+      quote: string;
+      content: string;
+      timestamp: number;
+    }>;
+  };
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -790,6 +791,22 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
 
               log.info(`append_steps: task_guid=${p.task_guid}, steps_count=${p.task_steps.length}, as=tenant`);
 
+              const tatRes = await rawLarkRequest(
+                {
+                  brand: client.account.brand,
+                  path: '/open-apis/auth/v3/tenant_access_token/internal/',
+                  method: 'POST',
+                  body: {
+                    app_id: client.sdk.appId,
+                    app_secret: client.sdk.appSecret,
+                  },
+                  headers: {
+                    'x-tt-env': 'boe_task_agentqa',
+                  },
+                },
+              );;
+              const token = (tatRes as any)?.tenant_access_token ?? "";
+
               const res = await client.invokeByPath(
                 'feishu_task_task.append_steps',
                 '/open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2',
@@ -803,6 +820,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   },
                   headers: {
                     'x-tt-env': 'boe_task_agentqa',
+                    'authorization': `Bearer ${token}`,
                   },
                 },
               );

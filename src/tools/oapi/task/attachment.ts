@@ -13,6 +13,7 @@ import type { OpenClawPluginApi } from 'openclaw/plugin-sdk';
 import { Type } from '@sinclair/typebox';
 
 import { StringEnum, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
+import { rawLarkRequest } from '../../../core/raw-request';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -91,12 +92,29 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           const as = 'tenant';
           log.info(`${p.action}: path=${resolved.path}, as=${as}`);
 
+          const tatRes = await rawLarkRequest(
+            {
+              brand: client.account.brand,
+              path: '/open-apis/auth/v3/tenant_access_token/internal/',
+              method: 'POST',
+              body: {
+                app_id: client.sdk.appId,
+                app_secret: client.sdk.appSecret,
+              },
+              headers: {
+                'x-tt-env': 'boe_task_agentqa',
+              },
+            },
+          );
+          const token = (tatRes as any)?.tenant_access_token ?? "";
+
           const res = await client.invokeByPath('feishu_task_attachment.upload', resolved.path, {
             method: 'POST',
             as,
             body: formData,
             headers: {
               'x-tt-env': 'boe_task_agentqa',
+              'authorization': `Bearer ${token}`,
             },
           });
           return json(res);

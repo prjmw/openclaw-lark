@@ -14,10 +14,11 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type {OpenClawPluginApi} from 'openclaw/plugin-sdk';
-import {Type} from '@sinclair/typebox';
+import type { OpenClawPluginApi } from 'openclaw/plugin-sdk';
+import { Type } from '@sinclair/typebox';
 
-import {createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool} from '../helpers';
+import { createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
+import { rawLarkRequest } from '../../../core/raw-request';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -51,17 +52,17 @@ type FeishuTaskAgentParams =
 
 function resolvePathForAction(action: FeishuTaskAgentParams['action']): { path: string; env: string[] } {
     if (action === 'register') {
-        return {path: '/open-apis/task/v2/agent/register_agent_oapi_v_2', env: []};
+        return { path: '/open-apis/task/v2/agent/register_agent_oapi_v_2', env: [] };
     }
     if (action === 'unregister') {
-        return {path: '/open-apis/task/v2/agent/unregister_agent_oapi_v_2', env: []};
+        return { path: '/open-apis/task/v2/agent/unregister_agent_oapi_v_2', env: [] };
     }
     if (action === 'update_profile') {
-        return {path: '/open-apis/task/v2/agent/update_agent_profile_oapi_v_2', env: []};
+        return { path: '/open-apis/task/v2/agent/update_agent_profile_oapi_v_2', env: [] };
     }
 
     // list_registered / list_register
-    return {path: '/open-apis/task/v2/agent/list_registered_agent_oapi_v_2', env: []};
+    return { path: '/open-apis/task/v2/agent/list_registered_agent_oapi_v_2', env: [] };
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +73,7 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
     if (!api.config) return;
     const cfg = api.config;
 
-    const {toolClient, log} = createToolContext(api, 'feishu_task_agent');
+    const { toolClient, log } = createToolContext(api, 'feishu_task_agent');
 
     registerTool(
         api,
@@ -91,6 +92,22 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
 
                     const client = toolClient();
 
+                    const tatRes = await rawLarkRequest(
+                        {
+                            brand: client.account.brand,
+                            path: '/open-apis/auth/v3/tenant_access_token/internal/',
+                            method: 'POST',
+                            body: {
+                                app_id: client.sdk.appId,
+                                app_secret: client.sdk.appSecret,
+                            },
+                            headers: {
+                                'x-tt-env': 'boe_task_agentqa',
+                            },
+                        },
+                    );;
+                    const token = (tatRes as any)?.tenant_access_token ?? "";
+
                     // Match openclaw-lark-task semantics:
                     // - register/unregister/update_profile use tenant identity (TAT)
                     // - list_registered uses user identity (UAT)
@@ -99,7 +116,7 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                             ? 'tenant'
                             : 'user';
 
-                    log.info(`${normalizedAction}: path=${resolved.path}, as=${as}`);
+                    log.info(`${normalizedAction}: path=${resolved.path}, as=${as} tatRes=${JSON.stringify(tatRes)} tattoken=${token}`);
 
                     if (normalizedAction === 'list_registered') {
                         const res = await client.invokeByPath('feishu_task_agent.list_registered', resolved.path, {
@@ -120,7 +137,8 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                                 profile_content: p.profile_content,
                             },
                             headers: {
-                                'x-tt-env': 'boe_task_agentqa'
+                                'x-tt-env': 'boe_task_agentqa',
+                                'authorization': `Bearer ${token}`,
                             },
                         });
                         return json(res);
@@ -132,7 +150,8 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                         method: 'POST',
                         as,
                         headers: {
-                            'x-tt-env': 'boe_task_agentqa'
+                            'x-tt-env': 'boe_task_agentqa',
+                            'authorization': `Bearer ${token}`,
                         },
                     });
                     return json(res);
@@ -141,6 +160,6 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                 }
             },
         },
-        {name: 'feishu_task_agent'},
+        { name: 'feishu_task_agent' },
     );
 }
