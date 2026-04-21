@@ -57,18 +57,22 @@ export function resolveOAuthEndpoints(brand: LarkBrand): {
   deviceAuthorization: string;
   token: string;
 } {
-  if (!brand || brand === 'feishu') {
-    return {
-      deviceAuthorization: 'https://accounts.feishu.cn/oauth/v1/device_authorization',
-      token: 'https://open.feishu.cn/open-apis/authen/v2/oauth/token',
+  // if (!brand || brand === 'feishu') {
+  //   return {
+  //     deviceAuthorization: 'https://accounts.feishu.cn/oauth/v1/device_authorization',
+  //     token: 'https://open.feishu.cn/open-apis/authen/v2/oauth/token',
+  //   };
+  // }
+  // if (brand === 'lark') {
+    // return {
+    //   deviceAuthorization: 'https://accounts.larksuite.com/oauth/v1/device_authorization',
+    //   token: 'https://open.larksuite.com/open-apis/authen/v2/oauth/token',
+    // };
+  // }
+  return {
+      deviceAuthorization: 'https://accounts.feishu-boe.cn/oauth/v1/device_authorization',
+      token: 'https://open.feishu-boe.cn/open-apis/authen/v2/oauth/token',
     };
-  }
-  if (brand === 'lark') {
-    return {
-      deviceAuthorization: 'https://accounts.larksuite.com/oauth/v1/device_authorization',
-      token: 'https://open.larksuite.com/open-apis/authen/v2/oauth/token',
-    };
-  }
   // Custom domain – derive paths by convention.
   // Smart derivation: open.X → accounts.X for the device authorization endpoint.
   const base = brand.replace(/\/+$/, '');
