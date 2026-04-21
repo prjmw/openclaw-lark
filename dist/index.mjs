@@ -1,4 +1,4 @@
-import { $ as sendMediaLark, A as resolveAnyEnabledToolsConfig, B as updateCardFeishu, C as triggerOnboarding, Ct as createAccountScopedConfig, D as formatToolResult, Dt as getLarkAccountIds, E as createToolContext, Et as getLarkAccount, F as filterSensitiveScopes, G as formatMentionAllForText, H as buildMentionedMessage, I as getAppGrantedScopes, J as mentionedBot, K as formatMentionForCard, L as editMessageFeishu, M as openPlatformDomain, N as wwwDomain, O as getFirstAccount, P as getStoredToken, Q as sendCommentReplyLark, R as sendCardFeishu, S as handleInvokeErrorWithAutoAuth, St as getTicket, T as registerFeishuOAuthTool, Tt as getEnabledLarkAccounts, U as extractMessageBody, V as buildMentionedCardContent, W as formatMentionAllForCard, X as resolveFeishuGroupToolPolicy, Y as nonBotMentions, Z as sendCardLark, _ as getMessageFeishu, _t as parseFeishuRouteTarget, a as registerAskUserQuestionTool, at as uploadFileLark, b as buildConvertContextFromItem, bt as getUserAgent, c as formatDiagReportCli, ct as assertLarkOk$2, d as traceByMessageId, dt as AppScopeMissingError, et as sendTextLark, f as probeFeishu, ft as UserAuthRequiredError, g as checkMessageGate, gt as normalizeFeishuTarget, h as sanitizeParamsForLog, ht as looksLikeFeishuId, i as isMessageExpired, it as uploadAndSendMediaLark, j as mcpDomain, k as registerTool, l as formatTraceOutput, lt as formatLarkError, m as recordToolUseStart, mt as isCommentTarget, nt as sendFileLark, o as registerCommands, ot as uploadImageLark, p as recordToolUseEnd, pt as UserScopeInsufficientError, q as formatMentionForText, r as handleFeishuReaction, rt as sendImageLark, s as analyzeTrace, st as validateLocalMediaRoots, t as monitorFeishuProvider, tt as sendAudioLark, u as runDiagnosis, ut as AppScopeCheckFailedError, v as parseMessageEvent, vt as resolveReceiveIdType, w as executeAuthorize, wt as getDefaultLarkAccountId, x as extractMentionOpenId, xt as larkLogger, y as convertMessageContent, yt as LarkClient, z as sendMessageFeishu } from "./monitor-DpY-b2lF.mjs";
+import { $ as sendCommentReplyLark, A as resolveAnyEnabledToolsConfig, B as sendMessageFeishu, C as triggerOnboarding, Ct as getTicket, D as formatToolResult, Dt as getLarkAccount, E as createToolContext, Et as getEnabledLarkAccounts, F as getStoredToken, G as formatMentionAllForCard, H as buildMentionedCardContent, I as filterSensitiveScopes, J as formatMentionForText, K as formatMentionAllForText, L as getAppGrantedScopes, M as mcpDomain, N as openPlatformDomain, O as getFirstAccount, Ot as getLarkAccountIds, P as wwwDomain, Q as sendCardLark, R as editMessageFeishu, S as handleInvokeErrorWithAutoAuth, St as larkLogger, T as registerFeishuOAuthTool, Tt as getDefaultLarkAccountId, U as buildMentionedMessage, V as updateCardFeishu, W as extractMessageBody, X as nonBotMentions, Y as mentionedBot, Z as resolveFeishuGroupToolPolicy, _ as getMessageFeishu, _t as normalizeFeishuTarget, a as registerAskUserQuestionTool, at as uploadAndSendMediaLark, b as buildConvertContextFromItem, bt as LarkClient, c as formatDiagReportCli, ct as validateLocalMediaRoots, d as traceByMessageId, dt as AppScopeCheckFailedError, et as sendMediaLark, f as probeFeishu, ft as AppScopeMissingError, g as checkMessageGate, gt as looksLikeFeishuId, h as sanitizeParamsForLog, ht as isCommentTarget, i as isMessageExpired, it as sendImageLark, j as rawLarkRequest, k as registerTool, l as formatTraceOutput, lt as assertLarkOk$2, m as recordToolUseStart, mt as UserScopeInsufficientError, nt as sendAudioLark, o as registerCommands, ot as uploadFileLark, p as recordToolUseEnd, pt as UserAuthRequiredError, q as formatMentionForCard, r as handleFeishuReaction, rt as sendFileLark, s as analyzeTrace, st as uploadImageLark, t as monitorFeishuProvider, tt as sendTextLark, u as runDiagnosis, ut as formatLarkError, v as parseMessageEvent, vt as parseFeishuRouteTarget, w as executeAuthorize, wt as createAccountScopedConfig, x as extractMentionOpenId, xt as getUserAgent, y as convertMessageContent, yt as resolveReceiveIdType, z as sendCardFeishu } from "./monitor-CfWnotL3.mjs";
 import { emptyPluginConfigSchema } from "openclaw/plugin-sdk";
 import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
 import { PAIRING_APPROVED_MESSAGE } from "openclaw/plugin-sdk/channel-status";
@@ -1361,7 +1361,7 @@ const feishuPlugin = {
 	},
 	gateway: {
 		startAccount: async (ctx) => {
-			const { monitorFeishuProvider } = await import("./monitor-DpY-b2lF.mjs").then((n) => n.n);
+			const { monitorFeishuProvider } = await import("./monitor-CfWnotL3.mjs").then((n) => n.n);
 			const account = getLarkAccount(ctx.cfg, ctx.accountId);
 			const port = account.config?.webhookPort ?? null;
 			ctx.setStatus({
@@ -2779,9 +2779,19 @@ function registerFeishuTaskTaskTool(api) {
 						log.info(`add_members: added ${p.members.length} members to task ${p.task_guid}`);
 						return json({ task: res.data?.task });
 					}
-					case "append_steps":
+					case "append_steps": {
 						if (!p.task_steps.length) return json({ error: "task_steps is required and cannot be empty" });
 						log.info(`append_steps: task_guid=${p.task_guid}, steps_count=${p.task_steps.length}, as=tenant`);
+						const token = (await rawLarkRequest({
+							brand: client.account.brand,
+							path: "/open-apis/auth/v3/tenant_access_token/internal/",
+							method: "POST",
+							body: {
+								app_id: client.sdk.appId,
+								app_secret: client.sdk.appSecret
+							},
+							headers: { "x-tt-env": "boe_task_agentqa" }
+						}))?.tenant_access_token ?? "";
 						return json(await client.invokeByPath("feishu_task_task.append_steps", "/open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2", {
 							method: "POST",
 							as: "tenant",
@@ -2790,8 +2800,12 @@ function registerFeishuTaskTaskTool(api) {
 								idempotent_key: p.idempotent_key,
 								task_steps: p.task_steps
 							},
-							headers: { "x-tt-env": "boe_task_agentqa" }
+							headers: {
+								"x-tt-env": "boe_task_agentqa",
+								"authorization": `Bearer ${token}`
+							}
 						}));
+					}
 				}
 			} catch (err) {
 				return await handleInvokeErrorWithAutoAuth(err, cfg);
@@ -3050,11 +3064,24 @@ function registerFeishuTaskAttachmentTool(api) {
 				formData.append("file", p.file);
 				const as = "tenant";
 				log.info(`${p.action}: path=${resolved.path}, as=${as}`);
+				const token = (await rawLarkRequest({
+					brand: client.account.brand,
+					path: "/open-apis/auth/v3/tenant_access_token/internal/",
+					method: "POST",
+					body: {
+						app_id: client.sdk.appId,
+						app_secret: client.sdk.appSecret
+					},
+					headers: { "x-tt-env": "boe_task_agentqa" }
+				}))?.tenant_access_token ?? "";
 				return json(await client.invokeByPath("feishu_task_attachment.upload", resolved.path, {
 					method: "POST",
 					as,
 					body: formData,
-					headers: { "x-tt-env": "boe_task_agentqa" }
+					headers: {
+						"x-tt-env": "boe_task_agentqa",
+						"authorization": `Bearer ${token}`
+					}
 				}));
 			} catch (err) {
 				return await handleInvokeErrorWithAutoAuth(err, cfg);
@@ -3495,8 +3522,19 @@ function registerFeishuTaskAgentTool(api) {
 				const normalizedAction = p.action === "list_register" ? "list_registered" : p.action;
 				const resolved = resolvePathForAction(p.action);
 				const client = toolClient();
+				const tatRes = await rawLarkRequest({
+					brand: client.account.brand,
+					path: "/open-apis/auth/v3/tenant_access_token/internal/",
+					method: "POST",
+					body: {
+						app_id: client.sdk.appId,
+						app_secret: client.sdk.appSecret
+					},
+					headers: { "x-tt-env": "boe_task_agentqa" }
+				});
+				const token = tatRes?.tenant_access_token ?? "";
 				const as = normalizedAction === "register" || normalizedAction === "unregister" || normalizedAction === "update_profile" ? "tenant" : "user";
-				log.info(`${normalizedAction}: path=${resolved.path}, as=${as}`);
+				log.info(`${normalizedAction}: path=${resolved.path}, as=${as} tatRes=${JSON.stringify(tatRes)} tattoken=${token}`);
 				if (normalizedAction === "list_registered") return json(await client.invokeByPath("feishu_task_agent.list_registered", resolved.path, {
 					method: "POST",
 					as,
@@ -3506,13 +3544,19 @@ function registerFeishuTaskAgentTool(api) {
 					method: "POST",
 					as,
 					body: { profile_content: p.profile_content },
-					headers: { "x-tt-env": "boe_task_agentqa" }
+					headers: {
+						"x-tt-env": "boe_task_agentqa",
+						"authorization": `Bearer ${token}`
+					}
 				}));
 				const toolAction = normalizedAction === "register" ? "feishu_task_agent.register" : "feishu_task_agent.unregister";
 				return json(await client.invokeByPath(toolAction, resolved.path, {
 					method: "POST",
 					as,
-					headers: { "x-tt-env": "boe_task_agentqa" }
+					headers: {
+						"x-tt-env": "boe_task_agentqa",
+						"authorization": `Bearer ${token}`
+					}
 				}));
 			} catch (err) {
 				return await handleInvokeErrorWithAutoAuth(err, cfg);
