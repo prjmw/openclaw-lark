@@ -10,6 +10,9 @@
 
 import type { LarkBrand } from './types';
 import { feishuFetch } from './feishu-fetch';
+import { larkLogger } from './lark-logger';
+
+const reLog = larkLogger('core/raw-request');
 
 // ---------------------------------------------------------------------------
 // Domain URL resolution
@@ -97,6 +100,8 @@ export async function rawLarkRequest<T>(options: RawLarkRequestOptions): Promise
     headers,
     ...(requestBody !== undefined ? { body: requestBody } : {}),
   });
+
+  reLog.info(`rawLarkRequest url ${url.toString()} options ${JSON.stringify(options)} resp ${JSON.stringify(resp)}`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = (await resp.json()) as any;

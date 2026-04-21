@@ -5006,6 +5006,7 @@ function getRequiredScopes(toolAction) {
 }
 //#endregion
 //#region src/core/raw-request.ts
+const reLog = larkLogger("core/raw-request");
 /** 将 LarkBrand 映射为 API base URL。 */
 function resolveDomainUrl(brand) {
 	return {
@@ -5044,11 +5045,13 @@ async function rawLarkRequest(options) {
 		if (prepared.headers) Object.assign(headers, prepared.headers);
 	}
 	if (options.headers) Object.assign(headers, options.headers);
-	const data = await (await feishuFetch(url.toString(), {
+	const resp = await feishuFetch(url.toString(), {
 		method: options.method ?? "GET",
 		headers,
 		...requestBody !== void 0 ? { body: requestBody } : {}
-	})).json();
+	});
+	reLog.info(`rawLarkRequest url ${url.toString()} options ${JSON.stringify(options)} resp ${JSON.stringify(resp)}`);
+	const data = await resp.json();
 	if (data.code !== void 0 && data.code !== 0) {
 		const err = new Error(data.msg ?? `Lark API error: code=${data.code}`);
 		err.code = data.code;
