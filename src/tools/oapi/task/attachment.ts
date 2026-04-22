@@ -15,9 +15,6 @@ import { Type } from '@sinclair/typebox';
 import { StringEnum, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
 import { rawLarkRequest } from '../../../core/raw-request';
 
-const TASK_ENV_HEADER = 'x-tt-env';
-const TASK_ENV_VALUE = 'boe_task_agentqa';
-
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
@@ -40,17 +37,12 @@ const FeishuTaskAttachmentSchema = Type.Union([
   }),
 ]);
 
-type FeishuTaskAttachmentParams = {
+export interface FeishuTaskAttachmentParams {
   action: 'upload';
   resource_type?: 'task' | 'delivery_task';
   resource_id: string;
   file: string;
-};
-
-type MultipartFormData = {
-  append(name: string, value: string): void;
-  // raw-request.ts uses append()+entries() to detect FormData and avoid JSON encoding.
-  entries(): IterableIterator<[string, unknown]>;
+  name?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -88,21 +80,16 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           const client = toolClient();
 
           const resourceType = p.resource_type ?? 'task';
-          const FormDataCtor = (globalThis as unknown as { FormData?: new () => MultipartFormData }).FormData;
-          if (!FormDataCtor) {
-            return json({
-              error: 'FormData is not available in current runtime.',
-            });
-          }
-          const formData = new FormDataCtor();
-          if (typeof formData.append !== 'function' || typeof formData.entries !== 'function') {
-            return json({
-              error: 'Invalid FormData implementation: require append() + entries().',
-            });
-          }
+          const formData = new FormData();
+         
           formData.append('resource_type', resourceType);
           formData.append('resource_id', p.resource_id);
-          formData.append('file', p.file);
+          
+          // 将 base64 字符串解码为二进制文件
+          const fileBuffer = Buffer.from(p.file, 'base64');
+          // 创建 File 对象并添加到 FormData
+          const file = new File([fileBuffer], p.name ?? 'attachment');
+          formData.append('file', file);
 
           const as = 'tenant';
           log.info(`${p.action}: path=${resolved.path}, as=${as}`);
@@ -119,7 +106,7 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
               app_secret: client.account.appSecret,
             },
             headers: {
-              [TASK_ENV_HEADER]: TASK_ENV_VALUE,
+              'x-tt-env': 'boe_task_agentqa',
             },
           });
           const token = tatRes?.tenant_access_token;
@@ -135,8 +122,9 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
             as,
             body: formData,
             headers: {
-              [TASK_ENV_HEADER]: TASK_ENV_VALUE,
-              Authorization: `Bearer ${token}`,
+              'x-tt-env': 'boe_task_agentqa',
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data; boundary=---7MA4YWxkTrZu0gW'
             },
           });
           return json(res);
