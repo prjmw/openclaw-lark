@@ -127,7 +127,6 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
             headers: {
               'x-tt-env': 'boe_task_agentqa',
               'Authorization': `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data; boundary=---7MA4YWxkTrZu0gW'
             },
           });
           return json(res);

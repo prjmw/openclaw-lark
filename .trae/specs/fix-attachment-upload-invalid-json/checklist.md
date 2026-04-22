@@ -1,0 +1,5 @@
+- [x] `attachment.ts` 中的 `invokeByPath` headers 不再包含手写的 `Content-Type: multipart/form-data; boundary=...`
+- [x] headers 仍包含 `x-tt-env` 与 `Authorization: Bearer <token>`
+- [x] FormData body 仍然通过 `formData.append('resource_type' | 'resource_id' | 'file', ...)` 组装
+- [x] `rawLarkRequest` 在 FormData 分支不会注入 `Content-Type: application/json`
+- [x] 通过类型检查/诊断，无新引入语法错误
