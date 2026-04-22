@@ -7,7 +7,7 @@
 ## What Changes
 - 为 `feishu_task_attachment` 的 `upload` action 增加 3 个入参：`resource_type`、`resource_id`、`file`
 - 明确 `upload` 请求采用 `multipart/form-data` 方式提交
-- `resource_type` 为字符串枚举，支持 `task` 与 `delivery_task`，默认值为 `task`
+- `resource_type` 为字符串枚举，支持 `task` 与 `task_delivery`，默认值为 `task`
 - `resource_id` 表示附件归属资源 ID
 - `file` 表示待上传文件
 - 更新 `attachment.ts` 中的 schema、TS params 和执行逻辑，使三处定义保持一致
@@ -23,7 +23,7 @@
 #### Scenario: 传入资源类型
 - **WHEN** 调用 `upload` action 时传入 `resource_type`
 - **THEN** 系统接受该字段，类型为字符串
-- **THEN** 允许值为 `task` 或 `delivery_task`
+- **THEN** 允许值为 `task` 或 `task_delivery`
 - **THEN** 当调用方未显式指定时，默认值为 `task`
 
 #### Scenario: 传入归属资源 ID

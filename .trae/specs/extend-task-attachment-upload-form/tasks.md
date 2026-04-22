@@ -1,7 +1,7 @@
 # Tasks
 - [x] Task 1: 扩展 `upload` action 的入参定义
   - [x] 在 `src/tools/oapi/task/attachment.ts` 的 TypeBox schema 中为 `upload` 增加 `resource_type`、`resource_id`、`file`
-  - [x] 将 `resource_type` 限定为 `task` / `delivery_task`
+  - [x] 将 `resource_type` 限定为 `task` / `task_delivery`
   - [x] 在 TS 参数类型中补齐对应字段，并体现 `resource_type` 默认值语义
 
 - [x] Task 2: 扩展上传请求体构造逻辑

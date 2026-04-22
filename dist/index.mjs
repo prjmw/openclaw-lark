@@ -3025,8 +3025,8 @@ function registerFeishuTaskTasklistTool(api) {
 //#region src/tools/oapi/task/attachment.ts
 const FeishuTaskAttachmentSchema = Type.Union([Type.Object({
 	action: Type.Literal("upload"),
-	resource_type: Type.Optional(StringEnum(["task", "delivery_task"], {
-		description: "资源类型，可选值：task、delivery_task。默认 task。",
+	resource_type: Type.Optional(StringEnum(["task", "task_delivery"], {
+		description: "资源类型，可选值：task、task_delivery。默认 task。",
 		default: "task"
 	})),
 	resource_id: Type.String({ description: "资源 ID。" }),

@@ -30,8 +30,8 @@ const FeishuTaskAttachmentSchema = Type.Union([
   Type.Object({
     action: Type.Literal('upload'),
     resource_type: Type.Optional(
-      StringEnum(['task', 'delivery_task'], {
-        description: '资源类型，可选值：task、delivery_task。默认 task。',
+      StringEnum(['task', 'task_delivery'], {
+        description: '资源类型，可选值：task、task_delivery。默认 task。',
         default: 'task',
       }),
     ),
@@ -49,7 +49,7 @@ const FeishuTaskAttachmentSchema = Type.Union([
 
 export interface FeishuTaskAttachmentParams {
   action: 'upload';
-  resource_type?: 'task' | 'delivery_task';
+  resource_type?: 'task' | 'task_delivery';
   resource_id: string;
   file: string;
   name?: string;
@@ -102,7 +102,7 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           // 创建 File 对象并添加到 FormData
           const fileBytes = new Uint8Array(fileBuffer);
           log.error(`lxr lxr lxr 3 upload fileBytes: ${fileBytes}`);
-          const file = new File([fileBytes], p.name ?? 'attachment');
+          const file = new File([fileBuffer], p.name ?? 'attachment');
           formData.append('file', file);
 
           const as = 'tenant';
