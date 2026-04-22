@@ -1,0 +1,5 @@
+- [x] 已明确修复点：tenant token 获取不应依赖 `client.sdk.*`
+- [x] 已明确 multipart 表单需要被 raw-request 稳定识别（`append()` + `entries()`）
+- [x] 已明确表单字段名保持 `resource_type/resource_id/file` 不变
+- [x] 已明确上传请求头包含 `Authorization: Bearer <token>` 与 `x-tt-env`
+- [x] 已包含最小验证要求（FormData 识别边界 + 基础诊断）

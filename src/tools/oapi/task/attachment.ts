@@ -15,6 +15,9 @@ import { Type } from '@sinclair/typebox';
 import { StringEnum, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
 import { rawLarkRequest } from '../../../core/raw-request';
 
+const TASK_ENV_HEADER = 'x-tt-env';
+const TASK_ENV_VALUE = 'boe_task_agentqa';
+
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
@@ -46,6 +49,8 @@ type FeishuTaskAttachmentParams = {
 
 type MultipartFormData = {
   append(name: string, value: string): void;
+  // raw-request.ts uses append()+entries() to detect FormData and avoid JSON encoding.
+  entries(): IterableIterator<[string, unknown]>;
 };
 
 // ---------------------------------------------------------------------------
@@ -83,8 +88,18 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           const client = toolClient();
 
           const resourceType = p.resource_type ?? 'task';
-          const FormDataCtor = (globalThis as typeof globalThis & { FormData: new () => MultipartFormData }).FormData;
+          const FormDataCtor = (globalThis as unknown as { FormData?: new () => MultipartFormData }).FormData;
+          if (!FormDataCtor) {
+            return json({
+              error: 'FormData is not available in current runtime.',
+            });
+          }
           const formData = new FormDataCtor();
+          if (typeof formData.append !== 'function' || typeof formData.entries !== 'function') {
+            return json({
+              error: 'Invalid FormData implementation: require append() + entries().',
+            });
+          }
           formData.append('resource_type', resourceType);
           formData.append('resource_id', p.resource_id);
           formData.append('file', p.file);
@@ -92,29 +107,36 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           const as = 'tenant';
           log.info(`${p.action}: path=${resolved.path}, as=${as}`);
 
-          const tatRes = await rawLarkRequest(
-            {
-              brand: client.account.brand,
-              path: '/open-apis/auth/v3/tenant_access_token/internal/',
-              method: 'POST',
-              body: {
-                app_id: client.sdk.appId,
-                app_secret: client.sdk.appSecret,
-              },
-              headers: {
-                'x-tt-env': 'boe_task_agentqa',
-              },
+          const tatRes = await rawLarkRequest<{
+            tenant_access_token?: string;
+            [k: string]: unknown;
+          }>({
+            brand: client.account.brand,
+            path: '/open-apis/auth/v3/tenant_access_token/internal/',
+            method: 'POST',
+            body: {
+              app_id: client.account.appId,
+              app_secret: client.account.appSecret,
             },
-          );
-          const token = (tatRes as any)?.tenant_access_token ?? "";
+            headers: {
+              [TASK_ENV_HEADER]: TASK_ENV_VALUE,
+            },
+          });
+          const token = tatRes?.tenant_access_token;
+          if (!token) {
+            return json({
+              error: 'Failed to get tenant_access_token.',
+              response: tatRes,
+            });
+          }
 
           const res = await client.invokeByPath('feishu_task_attachment.upload', resolved.path, {
             method: 'POST',
             as,
             body: formData,
             headers: {
-              'x-tt-env': 'boe_task_agentqa',
-              'authorization': `Bearer ${token}`,
+              [TASK_ENV_HEADER]: TASK_ENV_VALUE,
+              Authorization: `Bearer ${token}`,
             },
           });
           return json(res);
