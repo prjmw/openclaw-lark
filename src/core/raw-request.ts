@@ -55,6 +55,48 @@ function isBinaryBody(body: unknown): boolean {
   return body instanceof ArrayBuffer || ArrayBuffer.isView(body);
 }
 
+function serializeForLog(value: unknown): unknown {
+  if (isFormDataBody(value)) {
+    const formData = value as FormData;
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of formData.entries()) {
+      const valAny = val as any;
+      if (valAny instanceof File) {
+        result[key] = {
+          kind: 'File',
+          name: valAny.name,
+          size: valAny.size,
+          mimeType: valAny.type,
+        };
+      } else if (valAny instanceof Blob) {
+        result[key] = {
+          kind: 'Blob',
+          size: valAny.size,
+          mimeType: valAny.type,
+        };
+      } else {
+        result[key] = val;
+      }
+    }
+    return result;
+  }
+  if (isBinaryBody(value)) {
+    return {
+      kind: 'Binary',
+      byteLength: (value as ArrayBuffer | ArrayBufferView).byteLength,
+    };
+  }
+  return value;
+}
+
+function serializeOptionsForLog(options: RawLarkRequestOptions): unknown {
+  return {
+    ...options,
+    body: serializeForLog(options.body),
+    accessToken: options.accessToken ? '***' : undefined,
+  };
+}
+
 function buildRequestBody(body: unknown): { headers?: Record<string, string>; body: BodyInit | string } {
   if (typeof body === 'string' || body instanceof URLSearchParams || isFormDataBody(body) || isBinaryBody(body)) {
     return { body: body as BodyInit | string };
@@ -102,7 +144,7 @@ export async function rawLarkRequest<T>(options: RawLarkRequestOptions): Promise
     ...(requestBody !== undefined ? { body: requestBody } : {}),
   });
 
-  reLog.info(`rawLarkRequest url ${url.toString()} options ${JSON.stringify(options)} resp ${JSON.stringify(resp)}`);
+  reLog.info(`rawLarkRequest url ${url.toString()} options ${JSON.stringify(serializeOptionsForLog(options))} resp ${JSON.stringify(resp)}`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = (await resp.json()) as any;
