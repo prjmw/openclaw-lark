@@ -100,7 +100,9 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           const fileBuffer = Buffer.from(p.file, 'base64');
           log.error(`lxr lxr lxr 2 upload fileBuffer: ${JSON.stringify(p)} ${fileBuffer.length} ${fileBuffer.toString()}`);
           // 创建 File 对象并添加到 FormData
-          const file = new File([fileBuffer], p.name ?? 'attachment');
+          const fileBytes = new Uint8Array(fileBuffer);
+          log.error(`lxr lxr lxr 3 upload fileBytes: ${fileBytes}`);
+          const file = new File([fileBytes], p.name ?? 'attachment');
           formData.append('file', file);
 
           const as = 'tenant';
@@ -136,7 +138,6 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
             headers: {
               'x-tt-env': 'boe_task_agentqa',
               'Authorization': `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data; boundary=---7MA4YWxkTrZu0gW'
             },
           });
           return json(res);
