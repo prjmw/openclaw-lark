@@ -98,6 +98,7 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           
           // 将 base64 字符串解码为二进制文件
           const fileBuffer = Buffer.from(p.file, 'base64');
+          log.error(`lxr lxr lxr 2 upload fileBuffer: ${JSON.stringify(p)} ${fileBuffer.length} ${fileBuffer.toString()}`);
           // 创建 File 对象并添加到 FormData
           const file = new File([fileBuffer], p.name ?? 'attachment');
           formData.append('file', file);
