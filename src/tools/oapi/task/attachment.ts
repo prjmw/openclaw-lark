@@ -14,6 +14,13 @@ import { Type } from '@sinclair/typebox';
 
 import { StringEnum, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
 import { rawLarkRequest } from '../../../core/raw-request';
+import { larkLogger } from '../../../core/lark-logger';
+
+
+
+const log = larkLogger('tools/oapi/task/attachment');
+
+
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -81,6 +88,7 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
         try {
           const resolved = resolvePathForAction(p.action);
           const client = toolClient();
+          log.error(`lxr lxr lxr upload: ${JSON.stringify(p)}`);
 
           const resourceType = p.resource_type ?? 'task';
           const formData = new FormData();
