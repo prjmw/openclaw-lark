@@ -32,8 +32,11 @@ const FeishuTaskAttachmentSchema = Type.Union([
       description: '资源 ID。',
     }),
     file: Type.String({
-      description: '文件内容或文件 token 占位字符串。',
+      description: '文件内容base64编码字符串',
     }),
+    name: Type.Optional(Type.String({
+      description: '文件名。',
+    })),
   }),
 ]);
 

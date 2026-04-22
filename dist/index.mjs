@@ -3030,7 +3030,8 @@ const FeishuTaskAttachmentSchema = Type.Union([Type.Object({
 		default: "task"
 	})),
 	resource_id: Type.String({ description: "资源 ID。" }),
-	file: Type.String({ description: "文件内容或文件 token 占位字符串。" })
+	file: Type.String({ description: "文件内容base64编码字符串" }),
+	name: Type.Optional(Type.String({ description: "文件名。" }))
 })]);
 function resolvePathForAction$1(action) {
 	if (action === "upload") return {
@@ -3057,30 +3058,37 @@ function registerFeishuTaskAttachmentTool(api) {
 				const resolved = resolvePathForAction$1(p.action);
 				const client = toolClient();
 				const resourceType = p.resource_type ?? "task";
-				const FormDataCtor = globalThis.FormData;
-				const formData = new FormDataCtor();
+				const formData = new FormData();
 				formData.append("resource_type", resourceType);
 				formData.append("resource_id", p.resource_id);
-				formData.append("file", p.file);
+				const fileBuffer = Buffer.from(p.file, "base64");
+				const file = new File([fileBuffer], p.name ?? "attachment");
+				formData.append("file", file);
 				const as = "tenant";
 				log.info(`${p.action}: path=${resolved.path}, as=${as}`);
-				const token = (await rawLarkRequest({
+				const tatRes = await rawLarkRequest({
 					brand: client.account.brand,
 					path: "/open-apis/auth/v3/tenant_access_token/internal/",
 					method: "POST",
 					body: {
-						app_id: client.sdk.appId,
-						app_secret: client.sdk.appSecret
+						app_id: client.account.appId,
+						app_secret: client.account.appSecret
 					},
 					headers: { "x-tt-env": "boe_task_agentqa" }
-				}))?.tenant_access_token ?? "";
+				});
+				const token = tatRes?.tenant_access_token;
+				if (!token) return json({
+					error: "Failed to get tenant_access_token.",
+					response: tatRes
+				});
 				return json(await client.invokeByPath("feishu_task_attachment.upload", resolved.path, {
 					method: "POST",
 					as,
 					body: formData,
 					headers: {
 						"x-tt-env": "boe_task_agentqa",
-						"authorization": `Bearer ${token}`
+						"Authorization": `Bearer ${token}`,
+						"Content-Type": "multipart/form-data; boundary=---7MA4YWxkTrZu0gW"
 					}
 				}));
 			} catch (err) {
