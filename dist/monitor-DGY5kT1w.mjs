@@ -5003,6 +5003,40 @@ function isFormDataBody(body) {
 function isBinaryBody(body) {
 	return body instanceof ArrayBuffer || ArrayBuffer.isView(body);
 }
+function serializeForLog(value) {
+	if (isFormDataBody(value)) {
+		const formData = value;
+		const result = {};
+		for (const [key, val] of formData.entries()) {
+			const valAny = val;
+			if (valAny instanceof File) result[key] = {
+				kind: "File",
+				name: valAny.name,
+				size: valAny.size,
+				mimeType: valAny.type
+			};
+			else if (valAny instanceof Blob) result[key] = {
+				kind: "Blob",
+				size: valAny.size,
+				mimeType: valAny.type
+			};
+			else result[key] = val;
+		}
+		return result;
+	}
+	if (isBinaryBody(value)) return {
+		kind: "Binary",
+		byteLength: value.byteLength
+	};
+	return value;
+}
+function serializeOptionsForLog(options) {
+	return {
+		...options,
+		body: serializeForLog(options.body),
+		accessToken: options.accessToken ? "***" : void 0
+	};
+}
 function buildRequestBody(body) {
 	if (typeof body === "string" || body instanceof URLSearchParams || isFormDataBody(body) || isBinaryBody(body)) return { body };
 	return {
@@ -5033,7 +5067,7 @@ async function rawLarkRequest(options) {
 		headers,
 		...requestBody !== void 0 ? { body: requestBody } : {}
 	});
-	reLog.info(`rawLarkRequest url ${url.toString()} options ${JSON.stringify(options)} resp ${JSON.stringify(resp)}`);
+	reLog.info(`rawLarkRequest url ${url.toString()} options ${JSON.stringify(serializeOptionsForLog(options))} resp ${JSON.stringify(resp)}`);
 	const data = await resp.json();
 	if (data.code !== void 0 && data.code !== 0) {
 		const err = new Error(data.msg ?? `Lark API error: code=${data.code}`);
