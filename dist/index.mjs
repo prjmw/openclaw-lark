@@ -3023,7 +3023,6 @@ function registerFeishuTaskTasklistTool(api) {
 }
 //#endregion
 //#region src/tools/oapi/task/attachment.ts
-larkLogger("tools/oapi/task/attachment");
 const FeishuTaskAttachmentSchema = Type.Union([Type.Object({
 	action: Type.Literal("upload"),
 	resource_type: Type.Optional(StringEnum(["task", "task_delivery"], {
@@ -3058,15 +3057,11 @@ function registerFeishuTaskAttachmentTool(api) {
 			try {
 				const resolved = resolvePathForAction$1(p.action);
 				const client = toolClient();
-				log.error(`lxr lxr lxr upload: ${JSON.stringify(p)}`);
 				const resourceType = p.resource_type ?? "task";
 				const formData = new FormData();
 				formData.append("resource_type", resourceType);
 				formData.append("resource_id", p.resource_id);
 				const fileBuffer = Buffer.from(p.file, "base64");
-				log.error(`lxr lxr lxr 2 upload fileBuffer: ${JSON.stringify(p)} ${fileBuffer.length} ${fileBuffer.toString()}`);
-				const fileBytes = new Uint8Array(fileBuffer);
-				log.error(`lxr lxr lxr 3 upload fileBytes: ${fileBytes}`);
 				const file = new File([fileBuffer], p.name ?? "attachment");
 				formData.append("file", file);
 				const as = "tenant";
@@ -3092,7 +3087,8 @@ function registerFeishuTaskAttachmentTool(api) {
 					body: formData,
 					headers: {
 						"x-tt-env": "boe_task_agentqa",
-						"Authorization": `Bearer ${token}`
+						"Authorization": `Bearer ${token}`,
+						"Content-Type": "multipart/form-data; boundary=---7MA4YWxkTrZu0gW"
 					}
 				}));
 			} catch (err) {
