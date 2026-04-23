@@ -2792,7 +2792,7 @@ function registerFeishuTaskTaskTool(api) {
 							},
 							headers: { "x-tt-env": "boe_task_agentqa" }
 						}))?.tenant_access_token ?? "";
-						return json(await client.invokeByPath("feishu_task_task.append_steps", "/open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2", {
+						return json(await client.invokeByPath("feishu_task_task.append_steps", "/open-apis/task/v2/agent_task_step_info/append_task_steps", {
 							method: "POST",
 							as: "tenant",
 							body: {
@@ -3504,19 +3504,19 @@ const FeishuTaskAgentSchema = Type.Union([
 ]);
 function resolvePathForAction(action) {
 	if (action === "register") return {
-		path: "/open-apis/task/v2/agent/register_agent_oapi_v_2",
+		path: "/open-apis/task/v2/agent/register_agent",
 		env: []
 	};
 	if (action === "unregister") return {
-		path: "/open-apis/task/v2/agent/unregister_agent_oapi_v_2",
+		path: "/open-apis/task/v2/agent/unregister_agent",
 		env: []
 	};
 	if (action === "update_profile") return {
-		path: "/open-apis/task/v2/agent/update_agent_profile_oapi_v_2",
+		path: "/open-apis/task/v2/agent/update_agent_profile",
 		env: []
 	};
 	return {
-		path: "/open-apis/task/v2/agent/list_registered_agent_oapi_v_2",
+		path: "/open-apis/task/v2/agent/list_registered_agent",
 		env: []
 	};
 }

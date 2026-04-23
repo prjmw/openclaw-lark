@@ -52,17 +52,17 @@ type FeishuTaskAgentParams =
 
 function resolvePathForAction(action: FeishuTaskAgentParams['action']): { path: string; env: string[] } {
     if (action === 'register') {
-        return { path: '/open-apis/task/v2/agent/register_agent_oapi_v_2', env: [] };
+        return { path: '/open-apis/task/v2/agent/register_agent', env: [] };
     }
     if (action === 'unregister') {
-        return { path: '/open-apis/task/v2/agent/unregister_agent_oapi_v_2', env: [] };
+        return { path: '/open-apis/task/v2/agent/unregister_agent', env: [] };
     }
     if (action === 'update_profile') {
-        return { path: '/open-apis/task/v2/agent/update_agent_profile_oapi_v_2', env: [] };
+        return { path: '/open-apis/task/v2/agent/update_agent_profile', env: [] };
     }
 
     // list_registered / list_register
-    return { path: '/open-apis/task/v2/agent/list_registered_agent_oapi_v_2', env: [] };
+    return { path: '/open-apis/task/v2/agent/list_registered_agent', env: [] };
 }
 
 // ---------------------------------------------------------------------------

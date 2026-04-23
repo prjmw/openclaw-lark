@@ -13,7 +13,7 @@
  *   - list:   GET  /open-apis/task/v2/tasks
  *   - patch:  PATCH /open-apis/task/v2/tasks/:task_guid
  *   - add_members: POST /open-apis/task/v2/tasks/:task_guid/add_members
- *   - append_steps: POST /open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2
+ *   - append_steps: POST /open-apis/task/v2/agent_task_step_info/append_task_steps
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -809,7 +809,7 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
 
               const res = await client.invokeByPath(
                 'feishu_task_task.append_steps',
-                '/open-apis/task/v2/agent_task_step_info/append_task_steps_oapi_v_2',
+                '/open-apis/task/v2/agent_task_step_info/append_task_steps',
                 {
                   method: 'POST',
                   as: 'tenant',
