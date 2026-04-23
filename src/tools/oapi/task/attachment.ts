@@ -12,7 +12,7 @@
 import type { OpenClawPluginApi } from 'openclaw/plugin-sdk';
 import { Type } from '@sinclair/typebox';
 
-import { StringEnum, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool } from '../helpers';
+import { StringEnum, createToolContext, handleInvokeErrorWithAutoAuth, json, registerTool, getMimeTypeFromFileName } from '../helpers';
 import { rawLarkRequest } from '../../../core/raw-request';
 import { larkLogger } from '../../../core/lark-logger';
 
@@ -88,7 +88,6 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
         try {
           const resolved = resolvePathForAction(p.action);
           const client = toolClient();
-          log.error(`lxr lxr lxr upload: ${JSON.stringify(p)}`);
 
           const resourceType = p.resource_type ?? 'task';
           const formData = new FormData();
@@ -98,15 +97,15 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           
           // 将 base64 字符串解码为二进制文件
           const fileBuffer = Buffer.from(p.file, 'base64');
-          log.error(`lxr lxr lxr 2 upload fileBuffer: ${JSON.stringify(p)} ${fileBuffer.length} ${fileBuffer.toString()}`);
           // 创建 File 对象并添加到 FormData
+          const fileName = p.name ?? 'attachment';
+          const mimeType = getMimeTypeFromFileName(fileName);
           const fileBytes = new Uint8Array(fileBuffer);
-          log.error(`lxr lxr lxr 3 upload fileBytes: ${fileBytes}`);
-          const file = new File([fileBuffer], p.name ?? 'attachment');
+          const file = new File([fileBuffer], fileName, { type: mimeType });
           formData.append('file', file);
 
           const as = 'tenant';
-          log.info(`${p.action}: path=${resolved.path}, as=${as}`);
+          log.info(`${p.action}: path=${resolved.path}, as=${as}, file length ${fileBytes.length} type ${mimeType} name ${this.name}`);
 
           const tatRes = await rawLarkRequest<{
             tenant_access_token?: string;
