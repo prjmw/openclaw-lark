@@ -142,6 +142,7 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
           });
           return json(res);
         } catch (err) {
+          log.error(`lxr lxr lxr attchment: task upload error ${JSON.stringify(err)}`);
           return await handleInvokeErrorWithAutoAuth(err, cfg);
         }
       },
