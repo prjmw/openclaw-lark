@@ -16,20 +16,17 @@ import type { LarkBrand } from './types';
 
 /** 开放平台域名 (API & 权限管理页面) */
 export function openPlatformDomain(brand?: LarkBrand): string {
-  // return brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn';
-  return 'https://open.feishu-boe.cn';
+  return brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn';
 }
 
 /** Applink 域名 */
 export function applinkDomain(brand?: LarkBrand): string {
-  // return brand === 'lark' ? 'https://applink.larksuite.com' : 'https://applink.feishu.cn';
-  return 'https://applink.feishu-boe.cn';
+  return brand === 'lark' ? 'https://applink.larksuite.com' : 'https://applink.feishu.cn';
 }
 
 /** 主站域名 (文档、表格等用户可见链接) */
 export function wwwDomain(brand?: LarkBrand): string {
-  // return brand === 'lark' ? 'https://www.larksuite.com' : 'https://www.feishu.cn';
-  return 'https://www.feishu-boe.cn';
+  return brand === 'lark' ? 'https://www.larksuite.com' : 'https://www.feishu.cn';
 }
 
 /** MCP 服务域名 */
