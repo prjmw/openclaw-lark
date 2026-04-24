@@ -120,7 +120,8 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
               app_secret: client.account.appSecret,
             },
             headers: {
-              'x-tt-env': 'boe_task_agentqa',
+              'x-tt-env': 'ppe_task_agent',
+              'x-use-ppe': '1',
             },
           });
           const token = tatRes?.tenant_access_token;
@@ -136,7 +137,8 @@ export function registerFeishuTaskAttachmentTool(api: OpenClawPluginApi): void {
             as,
             body: formData,
             headers: {
-              'x-tt-env': 'boe_task_agentqa',
+              'x-tt-env': 'ppe_task_agent',
+              'x-use-ppe': '1',
               'Authorization': `Bearer ${token}`,
             },
           });

@@ -261,7 +261,8 @@ export function registerFeishuTaskTasklistTool(api: OpenClawPluginApi): void {
                   const modifiedOpt = opt || {};
                   modifiedOpt.headers = {
                     ...(modifiedOpt.headers || {}),
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
                   };
                   return sdk.task.v2.tasklist.list(
                     {

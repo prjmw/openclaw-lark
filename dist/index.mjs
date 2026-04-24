@@ -1,4 +1,4 @@
-import { $ as sendCommentReplyLark, A as resolveAnyEnabledToolsConfig, B as sendMessageFeishu, C as triggerOnboarding, Ct as getTicket, D as formatToolResult, Dt as getLarkAccount, E as createToolContext, Et as getEnabledLarkAccounts, F as getStoredToken, G as formatMentionAllForCard, H as buildMentionedCardContent, I as filterSensitiveScopes, J as formatMentionForText, K as formatMentionAllForText, L as getAppGrantedScopes, M as mcpDomain, N as openPlatformDomain, O as getFirstAccount, Ot as getLarkAccountIds, P as wwwDomain, Q as sendCardLark, R as editMessageFeishu, S as handleInvokeErrorWithAutoAuth, St as larkLogger, T as registerFeishuOAuthTool, Tt as getDefaultLarkAccountId, U as buildMentionedMessage, V as updateCardFeishu, W as extractMessageBody, X as nonBotMentions, Y as mentionedBot, Z as resolveFeishuGroupToolPolicy, _ as getMessageFeishu, _t as normalizeFeishuTarget, a as registerAskUserQuestionTool, at as uploadAndSendMediaLark, b as buildConvertContextFromItem, bt as LarkClient, c as formatDiagReportCli, ct as validateLocalMediaRoots, d as traceByMessageId, dt as AppScopeCheckFailedError, et as sendMediaLark, f as probeFeishu, ft as AppScopeMissingError, g as checkMessageGate, gt as looksLikeFeishuId, h as sanitizeParamsForLog, ht as isCommentTarget, i as isMessageExpired, it as sendImageLark, j as rawLarkRequest, k as registerTool, l as formatTraceOutput, lt as assertLarkOk$2, m as recordToolUseStart, mt as UserScopeInsufficientError, nt as sendAudioLark, o as registerCommands, ot as uploadFileLark, p as recordToolUseEnd, pt as UserAuthRequiredError, q as formatMentionForCard, r as handleFeishuReaction, rt as sendFileLark, s as analyzeTrace, st as uploadImageLark, t as monitorFeishuProvider, tt as sendTextLark, u as runDiagnosis, ut as formatLarkError, v as parseMessageEvent, vt as parseFeishuRouteTarget, w as executeAuthorize, wt as createAccountScopedConfig, x as extractMentionOpenId, xt as getUserAgent, y as convertMessageContent, yt as resolveReceiveIdType, z as sendCardFeishu } from "./monitor-t_WmqJtR.mjs";
+import { $ as sendCommentReplyLark, A as resolveAnyEnabledToolsConfig, B as sendMessageFeishu, C as triggerOnboarding, Ct as getTicket, D as formatToolResult, Dt as getLarkAccount, E as createToolContext, Et as getEnabledLarkAccounts, F as getStoredToken, G as formatMentionAllForCard, H as buildMentionedCardContent, I as filterSensitiveScopes, J as formatMentionForText, K as formatMentionAllForText, L as getAppGrantedScopes, M as mcpDomain, N as openPlatformDomain, O as getFirstAccount, Ot as getLarkAccountIds, P as wwwDomain, Q as sendCardLark, R as editMessageFeishu, S as handleInvokeErrorWithAutoAuth, St as larkLogger, T as registerFeishuOAuthTool, Tt as getDefaultLarkAccountId, U as buildMentionedMessage, V as updateCardFeishu, W as extractMessageBody, X as nonBotMentions, Y as mentionedBot, Z as resolveFeishuGroupToolPolicy, _ as getMessageFeishu, _t as normalizeFeishuTarget, a as registerAskUserQuestionTool, at as uploadAndSendMediaLark, b as buildConvertContextFromItem, bt as LarkClient, c as formatDiagReportCli, ct as validateLocalMediaRoots, d as traceByMessageId, dt as AppScopeCheckFailedError, et as sendMediaLark, f as probeFeishu, ft as AppScopeMissingError, g as checkMessageGate, gt as looksLikeFeishuId, h as sanitizeParamsForLog, ht as isCommentTarget, i as isMessageExpired, it as sendImageLark, j as rawLarkRequest, k as registerTool, l as formatTraceOutput, lt as assertLarkOk$2, m as recordToolUseStart, mt as UserScopeInsufficientError, nt as sendAudioLark, o as registerCommands, ot as uploadFileLark, p as recordToolUseEnd, pt as UserAuthRequiredError, q as formatMentionForCard, r as handleFeishuReaction, rt as sendFileLark, s as analyzeTrace, st as uploadImageLark, t as monitorFeishuProvider, tt as sendTextLark, u as runDiagnosis, ut as formatLarkError, v as parseMessageEvent, vt as parseFeishuRouteTarget, w as executeAuthorize, wt as createAccountScopedConfig, x as extractMentionOpenId, xt as getUserAgent, y as convertMessageContent, yt as resolveReceiveIdType, z as sendCardFeishu } from "./monitor-FAavmHXL.mjs";
 import { emptyPluginConfigSchema } from "openclaw/plugin-sdk";
 import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
 import { PAIRING_APPROVED_MESSAGE } from "openclaw/plugin-sdk/channel-status";
@@ -1361,7 +1361,7 @@ const feishuPlugin = {
 	},
 	gateway: {
 		startAccount: async (ctx) => {
-			const { monitorFeishuProvider } = await import("./monitor-t_WmqJtR.mjs").then((n) => n.n);
+			const { monitorFeishuProvider } = await import("./monitor-FAavmHXL.mjs").then((n) => n.n);
 			const account = getLarkAccount(ctx.cfg, ctx.accountId);
 			const port = account.config?.webhookPort ?? null;
 			ctx.setStatus({
@@ -2638,7 +2638,8 @@ function registerFeishuTaskTaskTool(api) {
 							const modifiedOpt = opt || {};
 							modifiedOpt.headers = {
 								...modifiedOpt.headers || {},
-								"x-tt-env": "boe_task_agentqa"
+								"x-tt-env": "ppe_task_agent",
+								"x-use-ppe": "1"
 							};
 							log.error(`feishu_task_task create: opt=${JSON.stringify(modifiedOpt)}`);
 							return sdk.task.v2.task.create({
@@ -2658,7 +2659,8 @@ function registerFeishuTaskTaskTool(api) {
 							const modifiedOpt = opt || {};
 							modifiedOpt.headers = {
 								...modifiedOpt.headers || {},
-								"x-tt-env": "boe_task_agentqa"
+								"x-tt-env": "ppe_task_agent",
+								"x-use-ppe": "1"
 							};
 							return sdk.task.v2.task.get({
 								path: { task_guid: p.task_guid },
@@ -2676,7 +2678,8 @@ function registerFeishuTaskTaskTool(api) {
 							const modifiedOpt = opts || {};
 							modifiedOpt.headers = {
 								...modifiedOpt.headers || {},
-								"x-tt-env": "boe_task_agentqa"
+								"x-tt-env": "ppe_task_agent",
+								"x-use-ppe": "1"
 							};
 							return sdk.task.v2.task.list({ params: {
 								page_size: p.page_size,
@@ -2744,7 +2747,8 @@ function registerFeishuTaskTaskTool(api) {
 							const modifiedOpt = opts || {};
 							modifiedOpt.headers = {
 								...modifiedOpt.headers || {},
-								"x-tt-env": "boe_task_agentqa"
+								"x-tt-env": "ppe_task_agent",
+								"x-use-ppe": "1"
 							};
 							log.error(`feishu_task_task patch: opt=${JSON.stringify(modifiedOpt)}`);
 							return sdk.task.v2.task.patch({
@@ -2790,7 +2794,10 @@ function registerFeishuTaskTaskTool(api) {
 								app_id: client.sdk.appId,
 								app_secret: client.sdk.appSecret
 							},
-							headers: { "x-tt-env": "boe_task_agentqa" }
+							headers: {
+								"x-tt-env": "ppe_task_agent",
+								"x-use-ppe": "1"
+							}
 						}))?.tenant_access_token ?? "";
 						return json(await client.invokeByPath("feishu_task_task.append_steps", "/open-apis/task/v2/agent_task_step_info/append_task_steps", {
 							method: "POST",
@@ -2801,7 +2808,8 @@ function registerFeishuTaskTaskTool(api) {
 								task_steps: p.task_steps
 							},
 							headers: {
-								"x-tt-env": "boe_task_agentqa",
+								"x-tt-env": "ppe_task_agent",
+								"x-use-ppe": "1",
 								"authorization": `Bearer ${token}`
 							}
 						}));
@@ -2939,7 +2947,8 @@ function registerFeishuTaskTasklistTool(api) {
 							const modifiedOpt = opt || {};
 							modifiedOpt.headers = {
 								...modifiedOpt.headers || {},
-								"x-tt-env": "boe_task_agentqa"
+								"x-tt-env": "ppe_task_agent",
+								"x-use-ppe": "1"
 							};
 							return sdk.task.v2.tasklist.list({ params: {
 								page_size: p.page_size,
@@ -3079,7 +3088,10 @@ function registerFeishuTaskAttachmentTool(api) {
 						app_id: client.account.appId,
 						app_secret: client.account.appSecret
 					},
-					headers: { "x-tt-env": "boe_task_agentqa" }
+					headers: {
+						"x-tt-env": "ppe_task_agent",
+						"x-use-ppe": "1"
+					}
 				});
 				const token = tatRes?.tenant_access_token;
 				if (!token) return json({
@@ -3091,7 +3103,8 @@ function registerFeishuTaskAttachmentTool(api) {
 					as,
 					body: formData,
 					headers: {
-						"x-tt-env": "boe_task_agentqa",
+						"x-tt-env": "ppe_task_agent",
+						"x-use-ppe": "1",
 						"Authorization": `Bearer ${token}`
 					}
 				}));
@@ -3543,7 +3556,10 @@ function registerFeishuTaskAgentTool(api) {
 						app_id: client.sdk.appId,
 						app_secret: client.sdk.appSecret
 					},
-					headers: { "x-tt-env": "boe_task_agentqa" }
+					headers: {
+						"x-tt-env": "ppe_task_agent",
+						"x-use-ppe": "1"
+					}
 				});
 				const token = tatRes?.tenant_access_token ?? "";
 				const as = normalizedAction === "register" || normalizedAction === "unregister" || normalizedAction === "update_profile" ? "tenant" : "user";
@@ -3551,14 +3567,18 @@ function registerFeishuTaskAgentTool(api) {
 				if (normalizedAction === "list_registered") return json(await client.invokeByPath("feishu_task_agent.list_registered", resolved.path, {
 					method: "POST",
 					as,
-					headers: { "x-tt-env": "boe_task_agentqa" }
+					headers: {
+						"x-tt-env": "ppe_task_agent",
+						"x-use-ppe": "1"
+					}
 				}));
 				if (normalizedAction === "update_profile") return json(await client.invokeByPath("feishu_task_agent.update_profile", resolved.path, {
 					method: "POST",
 					as,
 					body: { profile_content: p.profile_content },
 					headers: {
-						"x-tt-env": "boe_task_agentqa",
+						"x-tt-env": "ppe_task_agent",
+						"x-use-ppe": "1",
 						"authorization": `Bearer ${token}`
 					}
 				}));
@@ -3567,7 +3587,8 @@ function registerFeishuTaskAgentTool(api) {
 					method: "POST",
 					as,
 					headers: {
-						"x-tt-env": "boe_task_agentqa",
+						"x-tt-env": "ppe_task_agent",
+						"x-use-ppe": "1",
 						"authorization": `Bearer ${token}`
 					}
 				}));

@@ -100,9 +100,10 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                             body: {
                                 app_id: client.sdk.appId,
                                 app_secret: client.sdk.appSecret,
-                            },
+                                },
                             headers: {
-                                'x-tt-env': 'boe_task_agentqa',
+                                'x-tt-env': 'ppe_task_agent',
+                                'x-use-ppe': '1',
                             },
                         },
                     );;
@@ -123,7 +124,8 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                             method: 'POST',
                             as,
                             headers: {
-                                'x-tt-env': 'boe_task_agentqa'
+                                'x-tt-env': 'ppe_task_agent',
+                                'x-use-ppe': '1',
                             },
                         });
                         return json(res);
@@ -137,7 +139,8 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                                 profile_content: p.profile_content,
                             },
                             headers: {
-                                'x-tt-env': 'boe_task_agentqa',
+                                'x-tt-env': 'ppe_task_agent',
+                                'x-use-ppe': '1',
                                 'authorization': `Bearer ${token}`,
                             },
                         });
@@ -150,7 +153,8 @@ export function registerFeishuTaskAgentTool(api: OpenClawPluginApi): void {
                         method: 'POST',
                         as,
                         headers: {
-                            'x-tt-env': 'boe_task_agentqa',
+                            'x-tt-env': 'ppe_task_agent',
+                            'x-use-ppe': '1',
                             'authorization': `Bearer ${token}`,
                         },
                     });

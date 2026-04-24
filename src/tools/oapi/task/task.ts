@@ -502,7 +502,8 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   const modifiedOpt = opt || {};
                   modifiedOpt.headers = {
                     ...(modifiedOpt.headers || {}),
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
                   };
                   log.error(`feishu_task_task create: opt=${JSON.stringify(modifiedOpt)}`);
                   return sdk.task.v2.task.create(
@@ -540,7 +541,8 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   const modifiedOpt = opt || {};
                   modifiedOpt.headers = {
                     ...(modifiedOpt.headers || {}),
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
                   };
                   return sdk.task.v2.task.get(
                     {
@@ -576,7 +578,8 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   const modifiedOpt = opts || {};
                   modifiedOpt.headers = {
                     ...(modifiedOpt.headers || {}),
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
                   };
                   return sdk.task.v2.task.list(
                     {
@@ -701,7 +704,8 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                   const modifiedOpt = opts || {};
                   modifiedOpt.headers = {
                     ...(modifiedOpt.headers || {}),
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
                   };
                   log.error(`feishu_task_task patch: opt=${JSON.stringify(modifiedOpt)}`);
                   return sdk.task.v2.task.patch(
@@ -801,7 +805,8 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                     app_secret: client.sdk.appSecret,
                   },
                   headers: {
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
                   },
                 },
               );;
@@ -819,7 +824,8 @@ export function registerFeishuTaskTaskTool(api: OpenClawPluginApi): void {
                     task_steps: p.task_steps,
                   },
                   headers: {
-                    'x-tt-env': 'boe_task_agentqa',
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
                     'authorization': `Bearer ${token}`,
                   },
                 },
