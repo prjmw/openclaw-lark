@@ -21,8 +21,8 @@ const reLog = larkLogger('core/raw-request');
 /** 将 LarkBrand 映射为 API base URL。 */
 export function resolveDomainUrl(brand: LarkBrand): string {
   const map: Record<string, string> = {
-    feishu: 'https://open.feishu.cn',
-    lark: 'https://open.larksuite.com',
+    feishu: 'https://open.feishu-pre.cn',
+    lark: 'https://open.larksuite-pre.com',
   };
   return map[brand] ?? `https://${brand}`;
 }
