@@ -651,16 +651,7 @@ const BRAND_TO_DOMAIN = {
 };
 /** Map a `LarkBrand` to the SDK `domain` parameter. */
 function resolveBrand(brand) {
-	const resolvedBrand = brand ?? "feishu";
-	if (BRAND_TO_DOMAIN[resolvedBrand]) return BRAND_TO_DOMAIN[resolvedBrand];
-	let domain = resolvedBrand.replace(/\/+$/, "");
-	if (!domain.startsWith("http://") && !domain.startsWith("https://")) domain = `https://${domain}`;
-	try {
-		const url = new URL(domain);
-		return `${url.protocol}//${url.host}`;
-	} catch {
-		return `https://${domain}`;
-	}
+	return BRAND_TO_DOMAIN[brand ?? "feishu"] ?? brand.replace(/\/+$/, "");
 }
 /** Instance cache keyed by accountId. */
 const cache$1 = /* @__PURE__ */ new Map();
