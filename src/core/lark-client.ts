@@ -41,11 +41,42 @@ function installGlobalUserAgent(): void {
 
 installGlobalUserAgent();
 Lark.defaultHttpInstance.interceptors.request.handlers = [];
-// 使用 interceptors 在所有 HTTP 请求中注入 User-Agent header
+
+// 需要走预发布环境的 API 路径规则
+const PRE_RELEASE_PATHS = [
+  // 精确匹配：智能体 ping 接口
+  '/open-apis/bot/v1/openclaw_bot/ping',
+  // 前缀匹配：任务相关接口
+  '/open-apis/task/v1/',
+  '/open-apis/task/v2/',
+];
+
+/**
+ * 判断请求是否需要走预发布环境
+ */
+function shouldUsePreRelease(url: string): boolean {
+  return PRE_RELEASE_PATHS.some((path) => url.includes(path));
+}
+
+/**
+ * 将正式环境域名替换为预发布环境域名
+ */
+function replaceToPreReleaseDomain(url: string): string {
+  return url
+    .replace('https://open.feishu.cn', 'https://open.feishu-pre.cn')
+    .replace('https://open.larksuite.com', 'https://open.larksuite-pre.com');
+}
+
+// 使用 interceptors 在所有 HTTP 请求中注入 User-Agent header，并对特定路径做预发布域名替换
 Lark.defaultHttpInstance.interceptors.request.use(
   (req) => {
+    // 注入 User-Agent
     if (req.headers) {
       req.headers['User-Agent'] = getUserAgent();
+    }
+    // 对特定路径替换为预发布环境域名
+    if (req.url && shouldUsePreRelease(req.url)) {
+      req.url = replaceToPreReleaseDomain(req.url);
     }
     return req;
   },

@@ -641,8 +641,26 @@ function installGlobalUserAgent() {
 }
 installGlobalUserAgent();
 Lark.defaultHttpInstance.interceptors.request.handlers = [];
+const PRE_RELEASE_PATHS = [
+	"/open-apis/bot/v1/openclaw_bot/ping",
+	"/open-apis/task/v1/",
+	"/open-apis/task/v2/"
+];
+/**
+* 判断请求是否需要走预发布环境
+*/
+function shouldUsePreRelease(url) {
+	return PRE_RELEASE_PATHS.some((path) => url.includes(path));
+}
+/**
+* 将正式环境域名替换为预发布环境域名
+*/
+function replaceToPreReleaseDomain(url) {
+	return url.replace("https://open.feishu.cn", "https://open.feishu-pre.cn").replace("https://open.larksuite.com", "https://open.larksuite-pre.com");
+}
 Lark.defaultHttpInstance.interceptors.request.use((req) => {
 	if (req.headers) req.headers["User-Agent"] = getUserAgent();
+	if (req.url && shouldUsePreRelease(req.url)) req.url = replaceToPreReleaseDomain(req.url);
 	return req;
 }, void 0, { synchronous: true });
 const BRAND_TO_DOMAIN = {
