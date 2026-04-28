@@ -77,6 +77,10 @@ Lark.defaultHttpInstance.interceptors.request.use(
     // 对特定路径替换为预发布环境域名
     if (req.url && shouldUsePreRelease(req.url)) {
       req.url = replaceToPreReleaseDomain(req.url);
+      if (req.headers) {
+        req.headers['x-tt-env'] = 'ppe_task_agent';
+        req.headers['x-use-ppe'] = '1';
+      }
     }
     return req;
   },

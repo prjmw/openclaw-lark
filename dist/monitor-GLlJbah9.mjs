@@ -660,7 +660,13 @@ function replaceToPreReleaseDomain(url) {
 }
 Lark.defaultHttpInstance.interceptors.request.use((req) => {
 	if (req.headers) req.headers["User-Agent"] = getUserAgent();
-	if (req.url && shouldUsePreRelease(req.url)) req.url = replaceToPreReleaseDomain(req.url);
+	if (req.url && shouldUsePreRelease(req.url)) {
+		req.url = replaceToPreReleaseDomain(req.url);
+		if (req.headers) {
+			req.headers["x-tt-env"] = "ppe_task_agent";
+			req.headers["x-use-ppe"] = "1";
+		}
+	}
 	return req;
 }, void 0, { synchronous: true });
 const BRAND_TO_DOMAIN = {
