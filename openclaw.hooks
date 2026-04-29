@@ -1,0 +1,77 @@
+/**
+ * Copyright (c) 2026 ByteDance Ltd. and/or its affiliates
+ * SPDX-License-Identifier: MIT
+ *
+ * OpenClaw Lark Plugin Hooks
+ *
+ * This file defines lifecycle hooks for the OpenClaw Lark plugin.
+ * Hooks are executed at various stages of the plugin lifecycle.
+ */
+
+import type { OpenClawPluginApi, PluginHookContext } from 'openclaw/plugin-sdk';
+
+/**
+ * Plugin activation hook
+ * 
+ * Called when the plugin is activated.
+ * Use this to initialize resources, register tools, and set up event listeners.
+ */
+export async function onActivate(api: OpenClawPluginApi, ctx: PluginHookContext): Promise<void> {
+  // Initialize plugin resources
+  console.log('OpenClaw Lark plugin activated');
+  
+  // Register custom tools, commands, or event handlers
+  // Example: api.registerTool(toolDefinition);
+}
+
+/**
+ * Plugin deactivation hook
+ * 
+ * Called when the plugin is deactivated.
+ * Use this to clean up resources, close connections, and remove event listeners.
+ */
+export async function onDeactivate(api: OpenClawPluginApi, ctx: PluginHookContext): Promise<void> {
+  // Clean up plugin resources
+  console.log('OpenClaw Lark plugin deactivated');
+  
+  // Close connections, remove event listeners, etc.
+}
+
+/**
+ * Configuration change hook
+ * 
+ * Called when the plugin's configuration changes.
+ * Use this to update plugin behavior based on new configuration.
+ */
+export async function onConfigChange(api: OpenClawPluginApi, ctx: PluginHookContext): Promise<void> {
+  // Handle configuration changes
+  console.log('OpenClaw Lark plugin configuration changed');
+  
+  // Update plugin behavior based on new config
+}
+
+/**
+ * Before message processing hook
+ * 
+ * Called before processing a message.
+ * Use this to modify or filter messages before they are processed.
+ */
+export async function onBeforeMessage(api: OpenClawPluginApi, ctx: PluginHookContext): Promise<void> {
+  // Process message before it's handled
+  console.log('Processing message:', ctx.message);
+  
+  // Example: Modify message content, add context, etc.
+}
+
+/**
+ * After message processing hook
+ * 
+ * Called after processing a message.
+ * Use this to modify or enhance the response before it's sent.
+ */
+export async function onAfterMessage(api: OpenClawPluginApi, ctx: PluginHookContext): Promise<void> {
+  // Process response before it's sent
+  console.log('Message processed, preparing response');
+  
+  // Example: Enhance response, add additional information, etc.
+}

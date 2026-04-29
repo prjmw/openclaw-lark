@@ -257,8 +257,14 @@ export function registerFeishuTaskTasklistTool(api: OpenClawPluginApi): void {
 
               const res = await client.invoke(
                 'feishu_task_tasklist.list',
-                (sdk, opts) =>
-                  sdk.task.v2.tasklist.list(
+                (sdk, opt) => {
+                  const modifiedOpt = opt || {};
+                  modifiedOpt.headers = {
+                    ...(modifiedOpt.headers || {}),
+                    'x-tt-env': 'ppe_task_agent',
+                    'x-use-ppe': '1',
+                  };
+                  return sdk.task.v2.tasklist.list(
                     {
                       params: {
                         page_size: p.page_size,
@@ -266,8 +272,9 @@ export function registerFeishuTaskTasklistTool(api: OpenClawPluginApi): void {
                         user_id_type: 'open_id' as any,
                       },
                     },
-                    opts,
-                  ),
+                    modifiedOpt,
+                  );
+                },
                 { as: p.auth_type || 'user' },
               );
               assertLarkOk(res);

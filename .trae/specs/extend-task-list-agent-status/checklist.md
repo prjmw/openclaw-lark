@@ -1,0 +1,5 @@
+- [x] 已明确 `list` action 需要新增 `agent_task_status` 可选字段，类型为 `int`
+- [x] 已明确 `list` 的 schema、TypeScript 参数类型、SDK 查询参数都需要同步扩展
+- [x] 已明确 `patch` 中 `agent_task_progress` 应修正为 `string`
+- [x] 已明确 `patch` 中 `agent_task_status` 应修正为 `int`
+- [x] 已包含最小验证要求，覆盖 `list` 与 `patch` 两部分的一致性和基础诊断检查

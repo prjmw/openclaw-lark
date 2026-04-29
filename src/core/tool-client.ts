@@ -226,6 +226,8 @@ export class ToolClient {
       }
     }
 
+    tcLog.info(`todo client _invokeInternal toolAction ${toolAction} tokenType ${tokenType} options ${JSON.stringify(options) }`);
+
     // 5. 执行调用
     if (tokenType === 'tenant') {
       return this.invokeAsTenant(toolAction, fn, requiredScopes);

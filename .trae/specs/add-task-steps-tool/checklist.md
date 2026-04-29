@@ -1,0 +1,5 @@
+- [x] 已新增 `task_steps` tool 规格，明确初始实现以 `task_agent.ts` 为模板
+- [x] 已明确代码影响范围包含 `src/tools/oapi/task/task_steps.ts`
+- [x] 已明确需要更新 `src/tools/oapi/task/index.ts` 的统一导出
+- [x] 已明确初始版本仅提供最小可运行骨架，具体参数后续补充
+- [x] 已包含最小验证要求，覆盖结构一致性与基础诊断检查

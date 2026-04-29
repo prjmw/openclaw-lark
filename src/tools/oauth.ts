@@ -99,7 +99,7 @@ async function verifyTokenIdentity(
   accessToken: string,
   expectedOpenId: string,
 ): Promise<{ valid: boolean; actualOpenId?: string }> {
-  const domain = brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn';
+  const domain = brand === 'lark' ? 'https://open.larksuite-pre.com' : 'https://open.feishu-pre.cn';
   const url = `${domain}/open-apis/authen/v1/user_info`;
 
   try {
@@ -409,7 +409,7 @@ export async function executeAuthorize(
 
         if (availableScopes.length === 0) {
           // 所有 scope 都未开通，直接返回错误
-          const openDomain = brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn';
+          const openDomain = brand === 'lark' ? 'https://open.larksuite-pre.com' : 'https://open.feishu-pre.cn';
           const permissionUrl = `${openDomain}/app/${appId}/permission`;
           return json({
             error: 'app_scopes_not_granted',
@@ -685,12 +685,12 @@ export async function executeAuthorize(
 
   // 如果有被过滤的 scope，添加提示信息
   if (unavailableScopes.length > 0) {
-    const openDomain = brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn';
+    const openDomain = brand === 'lark' ? 'https://open.larksuite-pre.com' : 'https://open.feishu-pre.cn';
     const permissionUrl = `${openDomain}/app/${appId}/permission`;
     message += `\n\n⚠️ **注意**：以下权限因应用未开通而被跳过，如需使用请先在开放平台开通：\n${unavailableScopes.map((s) => `- ${s}`).join('\n')}\n\n权限管理地址：${permissionUrl}`;
   }
 
-  const openDomainForResult = brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn';
+  const openDomainForResult = brand === 'lark' ? 'https://open.larksuite-pre.com' : 'https://open.feishu-pre.cn';
   return json({
     success: true,
     message,

@@ -1,0 +1,5 @@
+- [x] 已明确 `append` action 需要新增 `task_guid`、`idempotent_key`、`task_steps` 3 个字段
+- [x] 已明确 `task_guid` 与 `idempotent_key` 的类型为 `string`
+- [x] 已明确 `task_steps` 为对象数组，内部对象包含 `quote:string`、`content:string`、`timestamp:int`
+- [x] 已明确 `append` 请求构造逻辑需要透传上述字段
+- [x] 已包含最小验证要求，覆盖结构一致性与基础诊断检查

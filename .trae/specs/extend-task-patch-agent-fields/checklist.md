@@ -1,0 +1,5 @@
+- [x] 已明确 `patch` action 需要新增 `agent_task_progress`、`agent_task_status`、`text_deliveries` 3 个可选字段
+- [x] 已明确 schema 与 TypeScript 参数类型都需要同步扩展
+- [x] 已明确 `patch` 请求体构造逻辑需要透传新增字段
+- [x] 已明确新增字段需要参与 `update_fields` 计算
+- [x] 已包含最小验证要求，覆盖结构一致性与基础诊断检查

@@ -461,7 +461,7 @@ function buildAppScopeMissingCard(params: {
   brand?: LarkBrand;
 }): Record<string, unknown> {
   const { missingScopes, appId, operationId, brand } = params;
-  const openDomain = brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn';
+  const openDomain = brand === 'lark' ? 'https://open.larksuite-pre.com' : 'https://open.feishu-pre.cn';
   const authUrl = appId
     ? `${openDomain}/app/${appId}/auth?q=${encodeURIComponent(missingScopes.join(','))}&op_from=feishu-openclaw&token_type=user`
     : `${openDomain}/`;
@@ -683,7 +683,7 @@ async function sendAppScopeCard(params: {
         `应用缺少以下权限：${missingScopes.join(', ')}，` +
         `请管理员在开放平台开通后重试。` +
         (appId
-          ? `\n权限管理：${account.brand === 'lark' ? 'https://open.larksuite.com' : 'https://open.feishu.cn'}/app/${appId}/permission`
+          ? `\n权限管理：${account.brand === 'lark' ? 'https://open.larksuite-pre.com' : 'https://open.feishu-pre.cn'}/app/${appId}/permission`
           : ''),
     });
   }

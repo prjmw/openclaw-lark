@@ -1,0 +1,6 @@
+- [ ] 已明确常量开关的取值与默认值（默认 `invoke`）
+- [ ] 已明确覆盖范围：将 `task.ts` 中现有 `client.invoke(...)` 的 action 改造为可切换
+- [ ] 已明确参数映射规则：`params → query`、`data → body`、`path → URL`
+- [ ] 已明确 `patch` 的空更新保护在两种模式下都成立
+- [ ] 已明确 `append_steps` 保持现状不变
+- [ ] 已包含最小验证要求（两条分支均可通过基础诊断/检查）

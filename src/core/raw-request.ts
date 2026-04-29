@@ -10,6 +10,9 @@
 
 import type { LarkBrand } from './types';
 import { feishuFetch } from './feishu-fetch';
+import { larkLogger } from './lark-logger';
+
+const reLog = larkLogger('core/raw-request');
 
 // ---------------------------------------------------------------------------
 // Domain URL resolution
@@ -18,8 +21,8 @@ import { feishuFetch } from './feishu-fetch';
 /** 将 LarkBrand 映射为 API base URL。 */
 export function resolveDomainUrl(brand: LarkBrand): string {
   const map: Record<string, string> = {
-    feishu: 'https://open.feishu.cn',
-    lark: 'https://open.larksuite.com',
+    feishu: 'https://open.feishu-pre.cn',
+    lark: 'https://open.larksuite-pre.com',
   };
   return map[brand] ?? `https://${brand}`;
 }
@@ -38,6 +41,72 @@ export interface RawLarkRequestOptions {
   accessToken?: string;
 }
 
+function isFormDataBody(body: unknown): boolean {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    typeof (body as { append?: unknown }).append === 'function' &&
+    typeof (body as { entries?: unknown }).entries === 'function'
+  );
+}
+
+function isBinaryBody(body: unknown): boolean {
+  return body instanceof ArrayBuffer || ArrayBuffer.isView(body);
+}
+
+function serializeForLog(value: unknown): unknown {
+  if (isFormDataBody(value)) {
+    const formData = value as FormData;
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of formData.entries()) {
+      const valAny = val as any;
+      if (valAny instanceof File) {
+        result[key] = {
+          kind: 'File',
+          name: valAny.name,
+          size: valAny.size,
+          mimeType: valAny.type,
+        };
+      } else if (valAny instanceof Blob) {
+        result[key] = {
+          kind: 'Blob',
+          size: valAny.size,
+          mimeType: valAny.type,
+        };
+      } else {
+        result[key] = val;
+      }
+    }
+    return result;
+  }
+  if (isBinaryBody(value)) {
+    return {
+      kind: 'Binary',
+      byteLength: (value as ArrayBuffer | ArrayBufferView).byteLength,
+    };
+  }
+  return value;
+}
+
+function serializeOptionsForLog(options: RawLarkRequestOptions): unknown {
+  return {
+    ...options,
+    body: serializeForLog(options.body),
+    accessToken: options.accessToken ? '***' : undefined,
+  };
+}
+
+function buildRequestBody(body: unknown): { headers?: Record<string, string>; body: BodyInit | string } {
+  if (typeof body === 'string' || body instanceof URLSearchParams || isFormDataBody(body) || isBinaryBody(body)) {
+    return { body: body as BodyInit | string };
+  }
+
+  return {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  };
+}
+
 /**
  * 发起 raw HTTP 请求到飞书 API，自动处理域名解析、header 注入和错误检测。
  *
@@ -53,11 +122,16 @@ export async function rawLarkRequest<T>(options: RawLarkRequestOptions): Promise
   }
 
   const headers: Record<string, string> = {};
+  let requestBody: BodyInit | string | undefined;
   if (options.accessToken) {
     headers['Authorization'] = `Bearer ${options.accessToken}`;
   }
   if (options.body !== undefined) {
-    headers['Content-Type'] = 'application/json';
+    const prepared = buildRequestBody(options.body);
+    requestBody = prepared.body;
+    if (prepared.headers) {
+      Object.assign(headers, prepared.headers);
+    }
   }
   if (options.headers) {
     Object.assign(headers, options.headers);
@@ -66,8 +140,10 @@ export async function rawLarkRequest<T>(options: RawLarkRequestOptions): Promise
   const resp = await feishuFetch(url.toString(), {
     method: options.method ?? 'GET',
     headers,
-    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+    ...(requestBody !== undefined ? { body: requestBody } : {}),
   });
+
+  reLog.info(`rawLarkRequest url ${url.toString()} options ${JSON.stringify(serializeOptionsForLog(options))} resp ${JSON.stringify(resp)}`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = (await resp.json()) as any;

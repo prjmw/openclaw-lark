@@ -1,0 +1,5 @@
+- [x] 已新增 `feishu_task_uploadattachment` 的 spec，明确初版以 `task_agent.ts` 为模板
+- [x] 已明确新增代码文件为 `src/tools/oapi/task/uploadattachment.ts`
+- [x] 已明确需要更新 `src/tools/oapi/task/index.ts` 的导出
+- [x] 已明确需要更新 `src/tools/oapi/index.ts` 的注册
+- [x] 已包含最小验证要求（导出/注册/基础诊断）
